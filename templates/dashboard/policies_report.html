@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="flex items-center justify-between mb-4">
+  <h1 class="text-xl font-semibold">Policies Report</h1>
+  <div class="flex gap-2">
+    <a class="inline-flex items-center rounded border px-3 py-2 text-sm hover:bg-gray-50" href="?status={{ request.GET.status }}&export=csv">Export CSV</a>
+    <a class="inline-flex items-center rounded border px-3 py-2 text-sm hover:bg-gray-50" href="?status={{ request.GET.status }}&export=xlsx">Export XLSX</a>
+  </div>
+</div>
+
+<form method="get" class="grid grid-cols-12 gap-3 mb-4" aria-label="Filter policies">
+  <div class="col-span-12 md:col-span-3">
+    <select name="status" class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+      <option value="">Any status</option>
+      <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>Active</option>
+      <option value="expired" {% if request.GET.status == 'expired' %}selected{% endif %}>Expired</option>
+    </select>
+  </div>
+  <div class="col-span-12 md:col-span-2">
+    <button class="w-full inline-flex items-center justify-center rounded border border-gray-300 px-3 py-2 text-sm hover:bg-gray-50" type="submit">Filter</button>
+  </div>
+</form>
+
+<div class="overflow-x-auto rounded border border-gray-200 bg-white">
+  <table class="min-w-full text-sm">
+    <thead class="bg-gray-50 text-left text-gray-600">
+      <tr>
+        <th class="px-3 py-2">Policy #</th>
+        <th class="px-3 py-2">Status</th>
+        <th class="px-3 py-2">Period</th>
+        <th class="px-3 py-2">Premium</th>
+        <th class="px-3 py-2">Coverage</th>
+        <th class="px-3 py-2">Vehicle</th>
+        <th class="px-3 py-2">Customer</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100">
+      {% for p in policies %}
+      <tr class="hover:bg-gray-50">
+        <td class="px-3 py-2">{{ p.policy_number }}</td>
+        <td class="px-3 py-2">{{ p.status }}</td>
+        <td class="px-3 py-2">{{ p.start_date|date:"Y-m-d" }} → {{ p.end_date|date:"Y-m-d" }}</td>
+        <td class="px-3 py-2">{{ p.premium_amount }}</td>
+        <td class="px-3 py-2">{{ p.coverage_amount }}</td>
+        <td class="px-3 py-2">{{ p.vehicle.registration_number }}</td>
+        <td class="px-3 py-2">
+          {% if p.vehicle.owner.customer_type == 'individual' %}
+            {{ p.vehicle.owner.first_name }} {{ p.vehicle.owner.last_name }}
+          {% else %}
+            {{ p.vehicle.owner.company_name }}
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7" class="px-3 py-6 text-center text-gray-500">No matching policies.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="mt-4 flex items-center gap-2 text-sm">
+  {% if page_obj.has_previous %}
+    <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?page=1&status={{ request.GET.status }}">First</a>
+    <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?page={{ page_obj.previous_page_number }}&status={{ request.GET.status }}">Prev</a>
+  {% else %}
+    <span class="rounded border px-2 py-1 opacity-50 cursor-not-allowed">First</span>
+    <span class="rounded border px-2 py-1 opacity-50 cursor-not-allowed">Prev</span>
+  {% endif %}
+  <span class="px-2 py-1">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+  {% if page_obj.has_next %}
+    <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?page={{ page_obj.next_page_number }}&status={{ request.GET.status }}">Next</a>
+    <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?page={{ page_obj.paginator.num_pages }}&status={{ request.GET.status }}">Last</a>
+  {% else %}
+    <span class="rounded border px-2 py-1 opacity-50 cursor-not-allowed">Next</span>
+    <span class="rounded border px-2 py-1 opacity-50 cursor-not-allowed">Last</span>
+  {% endif %}
+</div>
+{% endblock %}

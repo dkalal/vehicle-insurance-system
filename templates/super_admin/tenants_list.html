@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="flex items-center justify-between mb-4">
+  <h2 class="text-xl font-semibold">Tenants</h2>
+  <a href="{% url 'super_admin:tenant_create' %}" class="inline-flex items-center rounded bg-sky-600 px-3 py-2 text-white hover:bg-sky-700">New Tenant</a>
+  </div>
+  <form class="grid grid-cols-12 gap-3 mb-4" method="get">
+    <div class="col-span-12 md:col-span-4">
+      <input type="text" name="q" value="{{ request.GET.q }}" placeholder="Search by name, slug or domain" class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500" />
+    </div>
+    <div class="col-span-12 md:col-span-3">
+      <select name="status" class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+        <option value="">All statuses</option>
+        <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>Active</option>
+        <option value="inactive" {% if request.GET.status == 'inactive' %}selected{% endif %}>Inactive</option>
+        <option value="deleted" {% if request.GET.status == 'deleted' %}selected{% endif %}>Deleted</option>
+      </select>
+    </div>
+    <div class="col-span-12 md:col-span-2">
+      <button type="submit" class="w-full inline-flex items-center justify-center rounded border border-gray-300 px-3 py-2 text-sm hover:bg-gray-50">Filter</button>
+    </div>
+  </form>
+
+  <div class="overflow-x-auto rounded border border-gray-200 bg-white">
+    <table class="min-w-full text-sm">
+      <thead class="bg-gray-50 text-left text-gray-600">
+        <tr>
+          <th class="px-3 py-2">Name</th>
+          <th class="px-3 py-2">Slug</th>
+          <th class="px-3 py-2">Domain</th>
+          <th class="px-3 py-2">Status</th>
+          <th class="px-3 py-2">Created</th>
+          <th class="px-3 py-2 text-right">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        {% for t in tenants %}
+        <tr class="hover:bg-gray-50">
+          <td class="px-3 py-2">{{ t.name }}</td>
+          <td class="px-3 py-2">{{ t.slug }}</td>
+          <td class="px-3 py-2">{{ t.domain|default:'—' }}</td>
+          <td class="px-3 py-2">
+            {% if t.deleted_at %}
+              <span class="inline-flex rounded bg-gray-200 text-gray-800 px-2 py-1 text-xs">Deleted</span>
+            {% elif t.is_active %}
+              <span class="inline-flex rounded bg-green-100 text-green-800 px-2 py-1 text-xs">Active</span>
+            {% else %}
+              <span class="inline-flex rounded bg-yellow-100 text-yellow-800 px-2 py-1 text-xs">Inactive</span>
+            {% endif %}
+          </td>
+          <td class="px-3 py-2">{{ t.created_at|date:'Y-m-d' }}</td>
+          <td class="px-3 py-2 text-right">
+            <a class="inline-flex items-center rounded border border-sky-600 text-sky-700 hover:bg-sky-50 px-2 py-1" href="{% url 'super_admin:tenant_update' t.pk %}">Edit</a>
+            {% if not t.deleted_at %}
+              {% if t.is_active %}
+                <form action="{% url 'super_admin:tenant_deactivate' t.pk %}" method="post" class="inline">{% csrf_token %}
+                  <button class="inline-flex items-center rounded border border-yellow-600 text-yellow-700 hover:bg-yellow-50 px-2 py-1" type="submit">Deactivate</button>
+                </form>
+              {% else %}
+                <form action="{% url 'super_admin:tenant_activate' t.pk %}" method="post" class="inline">{% csrf_token %}
+                  <button class="inline-flex items-center rounded border border-green-600 text-green-700 hover:bg-green-50 px-2 py-1" type="submit">Activate</button>
+                </form>
+              {% endif %}
+              <form action="{% url 'super_admin:tenant_soft_delete' t.pk %}" method="post" class="inline" onsubmit="return confirm('Soft delete tenant? Users will be blocked.');">{% csrf_token %}
+                <button class="inline-flex items-center rounded border border-red-600 text-red-700 hover:bg-red-50 px-2 py-1" type="submit">Soft delete</button>
+              </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="px-3 py-6 text-center text-gray-500">No tenants found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if is_paginated %}
+  <div class="mt-4 flex items-center gap-2 text-sm">
+    {% if page_obj.has_previous %}
+      <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+    {% else %}
+      <span class="rounded border px-2 py-1 opacity-50 cursor-not-allowed">Previous</span>
+    {% endif %}
+    <span class="px-2 py-1">Page {{ page_obj.number }} of {{ paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+      <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?page={{ page_obj.next_page_number }}">Next</a>
+    {% else %}
+      <span class="rounded border px-2 py-1 opacity-50 cursor-not-allowed">Next</span>
+    {% endif %}
+  </div>
+  {% endif %}
+{% endblock %}

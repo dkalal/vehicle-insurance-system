@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="text-xl font-semibold mb-2">Audit Logs</h1>
+<p class="text-sm text-gray-600 mb-4">Read-only platform activity. Super Admin visibility only.</p>
+
+<form method="get" class="grid grid-cols-12 gap-3 mb-4" role="search" aria-label="Audit log filters">
+  <div class="col-span-12 md:col-span-3">
+    <label for="q" class="block text-sm font-medium text-gray-700">Search</label>
+    <input type="text" id="q" name="q" value="{{ filters.q }}" placeholder="Object, changes, etc." class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500" />
+  </div>
+  <div class="col-span-12 md:col-span-2">
+    <label for="model" class="block text-sm font-medium text-gray-700">Model</label>
+    <input type="text" id="model" name="model" value="{{ filters.model }}" placeholder="e.g. policy" class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500" />
+  </div>
+  <div class="col-span-12 md:col-span-2">
+    <label for="user" class="block text-sm font-medium text-gray-700">User</label>
+    <input type="text" id="user" name="user" value="{{ filters.user }}" placeholder="username/email/id" class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500" />
+  </div>
+  <div class="col-span-12 md:col-span-2">
+    <label for="action" class="block text-sm font-medium text-gray-700">Action</label>
+    <select id="action" name="action" class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+      <option value="">Any</option>
+      <option value="create" {% if filters.action == 'create' %}selected{% endif %}>Create</option>
+      <option value="update" {% if filters.action == 'update' %}selected{% endif %}>Update</option>
+      <option value="delete" {% if filters.action == 'delete' %}selected{% endif %}>Delete</option>
+    </select>
+  </div>
+  <div class="col-span-12 md:col-span-3">
+    <div class="grid grid-cols-12 gap-3">
+      <div class="col-span-6">
+        <label for="date_from" class="block text-sm font-medium text-gray-700">From</label>
+        <input type="date" id="date_from" name="date_from" value="{{ filters.date_from }}" class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500" />
+      </div>
+      <div class="col-span-6">
+        <label for="date_to" class="block text-sm font-medium text-gray-700">To</label>
+        <input type="date" id="date_to" name="date_to" value="{{ filters.date_to }}" class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500" />
+      </div>
+    </div>
+  </div>
+  <div class="col-span-12 flex gap-2">
+    <button type="submit" class="inline-flex items-center rounded bg-sky-600 px-4 py-2 text-white hover:bg-sky-700">Filter</button>
+    <a href="?" class="inline-flex items-center rounded border px-3 py-2 text-sm hover:bg-gray-50">Reset</a>
+  </div>
+</form>
+
+<div class="overflow-x-auto rounded border border-gray-200 bg-white">
+  <table class="min-w-full text-sm">
+    <thead class="bg-gray-50 text-left text-gray-600">
+      <tr>
+        <th class="px-3 py-2">Time</th>
+        <th class="px-3 py-2">User</th>
+        <th class="px-3 py-2">Action</th>
+        <th class="px-3 py-2">Model</th>
+        <th class="px-3 py-2">Object</th>
+        <th class="px-3 py-2">Changes</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100">
+      {% for log in logs %}
+      <tr class="hover:bg-gray-50">
+        <td class="px-3 py-2">{{ log.timestamp|date:"Y-m-d H:i:s" }}</td>
+        <td class="px-3 py-2">{% if log.actor %}{{ log.actor.username }}{% else %}<span class="text-gray-500">System</span>{% endif %}</td>
+        <td class="px-3 py-2">
+          {% if log.action == 0 %}<span class="inline-flex rounded bg-green-100 text-green-800 px-2 py-1 text-xs">Create</span>{% endif %}
+          {% if log.action == 1 %}<span class="inline-flex rounded bg-yellow-100 text-yellow-800 px-2 py-1 text-xs">Update</span>{% endif %}
+          {% if log.action == 2 %}<span class="inline-flex rounded bg-red-100 text-red-800 px-2 py-1 text-xs">Delete</span>{% endif %}
+        </td>
+        <td class="px-3 py-2">{{ log.content_type.app_label }}.{{ log.content_type.model }}</td>
+        <td class="px-3 py-2">
+          <div class="font-medium">{{ log.object_repr }}</div>
+          <div class="text-gray-500 text-xs">ID: {{ log.object_pk }}</div>
+        </td>
+        <td class="px-3 py-2 text-xs">
+          <code class="block whitespace-pre-wrap">{{ log.changes }}</code>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="6" class="px-3 py-6 text-center text-gray-500">No audit entries found.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="mt-4 flex items-center gap-2 text-sm">
+  {% if page_obj.has_previous %}
+    <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?page=1">First</a>
+    <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?page={{ page_obj.previous_page_number }}">Prev</a>
+  {% else %}
+    <span class="rounded border px-2 py-1 opacity-50 cursor-not-allowed">First</span>
+    <span class="rounded border px-2 py-1 opacity-50 cursor-not-allowed">Prev</span>
+  {% endif %}
+  <span class="px-2 py-1">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+  {% if page_obj.has_next %}
+    <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?page={{ page_obj.next_page_number }}">Next</a>
+    <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?page={{ page_obj.paginator.num_pages }}">Last</a>
+  {% else %}
+    <span class="rounded border px-2 py-1 opacity-50 cursor-not-allowed">Next</span>
+    <span class="rounded border px-2 py-1 opacity-50 cursor-not-allowed">Last</span>
+  {% endif %}
+</div>
+{% endblock %}

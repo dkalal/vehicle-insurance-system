@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="en" class="h-full">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Professional vehicle insurance management system">
+    <title>{% block title %}Vehicle Insurance{% endblock %}</title>
+    
+    <!-- Preload critical resources -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    
+    <!-- Modern CSS Framework -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/heroicons@2.0.18/24/outline/style.css">
+    
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              'sans': ['Inter', 'system-ui', 'sans-serif'],
+            },
+            colors: {
+              brand: {
+                50: '#eff6ff',
+                100: '#dbeafe',
+                200: '#bfdbfe',
+                300: '#93c5fd',
+                400: '#60a5fa',
+                500: '#3b82f6',
+                600: '#2563eb',
+                700: '#1d4ed8',
+                800: '#1e40af',
+                900: '#1e3a8a',
+              },
+              success: {
+                50: '#f0fdf4',
+                500: '#22c55e',
+                600: '#16a34a',
+              },
+              warning: {
+                50: '#fffbeb',
+                500: '#f59e0b',
+                600: '#d97706',
+              },
+              error: {
+                50: '#fef2f2',
+                500: '#ef4444',
+                600: '#dc2626',
+              }
+            },
+            animation: {
+              'fade-in': 'fadeIn 0.5s ease-in-out',
+              'slide-up': 'slideUp 0.3s ease-out',
+              'pulse-soft': 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            },
+            keyframes: {
+              fadeIn: {
+                '0%': { opacity: '0' },
+                '100%': { opacity: '1' },
+              },
+              slideUp: {
+                '0%': { transform: 'translateY(10px)', opacity: '0' },
+                '100%': { transform: 'translateY(0)', opacity: '1' },
+              }
+            }
+          }
+        }
+      }
+    </script>
+    
+    <!-- Custom CSS -->
+    <style>
+      .glass-effect {
+        backdrop-filter: blur(10px);
+        background: rgba(255, 255, 255, 0.1);
+      }
+      
+      .card-hover {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      
+      .card-hover:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      }
+      
+      .focus-ring {
+        @apply focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2;
+      }
+      
+      .btn-primary {
+        @apply bg-brand-600 hover:bg-brand-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 focus-ring;
+      }
+      
+      .btn-secondary {
+        @apply bg-gray-100 hover:bg-gray-200 text-gray-900 font-medium py-2 px-4 rounded-lg transition-colors duration-200 focus-ring;
+      }
+      
+      .input-field {
+        @apply block w-full rounded-lg border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm;
+      }
+    </style>
+    
+    {% block extra_head %}{% endblock %}
+  </head>
+  
+  <body class="h-full bg-gray-50 font-sans antialiased">
+    <!-- Skip to main content for accessibility -->
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-brand-600 text-white px-4 py-2 rounded-lg z-50">
+      Skip to main content
+    </a>
+    
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b border-gray-200" role="banner">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div class="flex h-16 items-center justify-between">
+          <!-- Logo and Brand -->
+          <div class="flex items-center">
+            <a href="{% if user.is_authenticated and not is_super_admin %}{% url 'dashboard:home' %}{% elif user.is_authenticated and is_super_admin %}{% url 'super_admin:home' %}{% else %}#{% endif %}" 
+               class="flex items-center space-x-3 text-xl font-bold text-gray-900 hover:text-brand-600 transition-colors">
+              <div class="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center">
+                <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"/>
+                  <path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1V5a1 1 0 00-1-1H3zM14 7a1 1 0 00-1 1v6.05A2.5 2.5 0 0115.95 16H17a1 1 0 001-1V8a1 1 0 00-1-1h-3z"/>
+                </svg>
+              </div>
+              <span>Vehicle Insurance</span>
+            </a>
+          </div>
+          
+          <!-- Navigation -->
+          <nav class="hidden md:flex items-center space-x-8" role="navigation" aria-label="Main navigation">
+            {% if user.is_authenticated and not is_super_admin %}
+              <a href="{% url 'dashboard:home' %}" class="text-gray-700 hover:text-brand-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                Dashboard
+              </a>
+              <a href="{% url 'dashboard:customers_list' %}" class="text-gray-700 hover:text-brand-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                Customers
+              </a>
+              <a href="{% url 'dashboard:vehicles_list' %}" class="text-gray-700 hover:text-brand-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                Vehicles
+              </a>
+              <a href="{% url 'dashboard:policies_list' %}" class="text-gray-700 hover:text-brand-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                Policies
+              </a>
+              <a href="{% url 'dashboard:policies_report' %}" class="text-gray-700 hover:text-brand-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                Reports
+              </a>
+              <a href="{% url 'dashboard:support_list' %}" class="text-gray-700 hover:text-brand-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                Support
+              </a>
+            {% endif %}
+            {% if user.is_authenticated and is_super_admin %}
+              <a href="{% url 'super_admin:home' %}" class="text-gray-700 hover:text-brand-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                Super Admin
+              </a>
+            {% endif %}
+          </nav>
+          
+          <!-- User Menu -->
+          <div class="flex items-center space-x-4">
+            {% if user.is_authenticated %}
+              <div class="flex items-center space-x-3">
+                <div class="text-sm text-gray-600">
+                  {% if is_super_admin %}
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                      Super Admin
+                    </span>
+                  {% else %}
+                    <span class="font-medium text-gray-900">{{ current_tenant.name }}</span>
+                  {% endif %}
+                </div>
+                <div class="relative">
+                  <button type="button" class="flex items-center space-x-2 text-sm text-gray-700 hover:text-gray-900 focus-ring rounded-lg px-3 py-2" 
+                          id="user-menu-button" aria-expanded="false" aria-haspopup="true">
+                    <div class="w-8 h-8 bg-brand-100 rounded-full flex items-center justify-center">
+                      <span class="text-brand-600 font-medium text-sm">
+                        {{ user.first_name|first|default:user.username|first|upper }}
+                      </span>
+                    </div>
+                    <span class="hidden sm:block">{{ user.get_full_name|default:user.username }}</span>
+                  </button>
+                </div>
+                <form method="post" action="{% url 'accounts:logout' %}" class="inline">
+                  {% csrf_token %}
+                  <button type="submit" class="btn-secondary text-sm">
+                    Sign out
+                  </button>
+                </form>
+              </div>
+            {% else %}
+              <a href="{% url 'accounts:login' %}" class="btn-primary">
+                Sign in
+              </a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main id="main-content" class="flex-1" role="main">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Platform Notifications -->
+        {% if platform_config and platform_config.maintenance_mode %}
+          <div class="mb-6 rounded-lg border-l-4 border-warning-500 bg-warning-50 p-4 animate-fade-in" role="alert">
+            <div class="flex">
+              <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-warning-500" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                </svg>
+              </div>
+              <div class="ml-3">
+                <h3 class="text-sm font-medium text-warning-800">Maintenance Mode Active</h3>
+                {% if platform_config.support_email %}
+                  <p class="mt-1 text-sm text-warning-700">
+                    For assistance, contact <a href="mailto:{{ platform_config.support_email }}" class="underline">{{ platform_config.support_email }}</a>
+                  </p>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        {% endif %}
+        
+        {% if platform_config and platform_config.announcement_message %}
+          <div class="mb-6 rounded-lg border-l-4 border-brand-500 bg-brand-50 p-4 animate-fade-in" role="alert">
+            <div class="flex">
+              <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-brand-500" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                </svg>
+              </div>
+              <div class="ml-3">
+                <p class="text-sm text-brand-800">{{ platform_config.announcement_message }}</p>
+              </div>
+            </div>
+          </div>
+        {% endif %}
+
+        <!-- Flash Messages -->
+        {% if messages %}
+          <div class="space-y-4 mb-6" role="alert" aria-live="polite">
+            {% for message in messages %}
+              <div class="rounded-lg p-4 animate-slide-up {% if message.tags == 'success' %}bg-success-50 border border-success-200{% elif message.tags == 'warning' %}bg-warning-50 border border-warning-200{% elif message.tags == 'error' %}bg-error-50 border border-error-200{% else %}bg-gray-50 border border-gray-200{% endif %}">
+                <div class="flex">
+                  <div class="flex-shrink-0">
+                    {% if message.tags == 'success' %}
+                      <svg class="h-5 w-5 text-success-500" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                      </svg>
+                    {% elif message.tags == 'warning' %}
+                      <svg class="h-5 w-5 text-warning-500" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                      </svg>
+                    {% elif message.tags == 'error' %}
+                      <svg class="h-5 w-5 text-error-500" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                      </svg>
+                    {% else %}
+                      <svg class="h-5 w-5 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                      </svg>
+                    {% endif %}
+                  </div>
+                  <div class="ml-3">
+                    <p class="text-sm {% if message.tags == 'success' %}text-success-800{% elif message.tags == 'warning' %}text-warning-800{% elif message.tags == 'error' %}text-error-800{% else %}text-gray-800{% endif %}">
+                      {{ message }}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        <!-- Page Content -->
+        {% block content %}{% endblock %}
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 mt-auto" role="contentinfo">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
+        <div class="flex items-center justify-between">
+          <p class="text-sm text-gray-500">
+            © {% now "Y" %} Vehicle Insurance System. Built with security and accessibility in mind.
+          </p>
+          <div class="flex items-center space-x-6">
+            <a href="#" class="text-sm text-gray-500 hover:text-gray-900 transition-colors">Privacy Policy</a>
+            <a href="#" class="text-sm text-gray-500 hover:text-gray-900 transition-colors">Terms of Service</a>
+            <a href="{% url 'dashboard:support_list' %}" class="text-sm text-gray-500 hover:text-gray-900 transition-colors">Support</a>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script>
+      // Auto-hide flash messages after 5 seconds
+      document.addEventListener('DOMContentLoaded', function() {
+        const messages = document.querySelectorAll('[role="alert"][aria-live="polite"] > div');
+        messages.forEach(function(message) {
+          setTimeout(function() {
+            message.style.transition = 'opacity 0.5s ease-out';
+            message.style.opacity = '0';
+            setTimeout(function() {
+              message.remove();
+            }, 500);
+          }, 5000);
+        });
+      });
+      
+      // Accessible dropdown toggle
+      document.getElementById('user-menu-button')?.addEventListener('click', function() {
+        // Add dropdown functionality here if needed
+      });
+      
+      // Form validation enhancement
+      document.querySelectorAll('form').forEach(function(form) {
+        form.addEventListener('submit', function(e) {
+          const requiredFields = form.querySelectorAll('[required]');
+          let isValid = true;
+          
+          requiredFields.forEach(function(field) {
+            if (!field.value.trim()) {
+              field.classList.add('border-error-500', 'focus:border-error-500', 'focus:ring-error-500');
+              isValid = false;
+            } else {
+              field.classList.remove('border-error-500', 'focus:border-error-500', 'focus:ring-error-500');
+            }
+          });
+          
+          if (!isValid) {
+            e.preventDefault();
+          }
+        });
+      });
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+  </body>
+</html>

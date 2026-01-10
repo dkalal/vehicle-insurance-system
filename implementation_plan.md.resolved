@@ -1,0 +1,586 @@
+# Vehicle Insurance Information System - Implementation Plan
+
+A comprehensive multi-tenant vehicle insurance platform using Django with row-level tenant isolation, designed for scalability, security, and maintainability.
+
+---
+
+## Status Update (Jan 5, 2026)
+
+- Completed
+  - Tenant model with history + audit logging; services for create/update/activate/deactivate/soft-delete
+  - Super Admin Tenant Management UI: list, filters, create/edit, activate/deactivate, soft delete
+  - Session security MVP: session rotation on login, secure cookie defaults (prod), login rate limiting (cache-based) with dev LocMem override
+  - Dynamic Fields: definitions + values, admin integration with tenant inheritance, and a service module for typed get/set
+  - Service layer: Customer, Vehicle, Policy (create/renew), Payment (add + activate on full pay)
+  - Admin hardening: Block Super Admin from tenant business ops; tenant-safe inlines
+  - Initial tests: rate limiting; core services happy-path and key business rules
+
+- Remaining (near-term)
+  - Tenant Operations UI MVP: tenant dashboard + list pages (Customers, Vehicles, Policies, Payments) linking to Admin for edits
+  - Tests expansion: permissions/isolation; history/audit assertions
+  - Reporting & Notifications MVP
+  - Production hardening & deployment
+
+---
+
+## User Review Required
+
+> [!IMPORTANT]
+> **Multi-Tenancy Strategy**: Using **Shared Database, Shared Schema with Row-Level Isolation (tenant_id)** - This is the most practical approach for your use case, offering a balance of isolation, cost-effectiveness, and simplicity.
+
+> [!WARNING]
+> **Super Admin Security**: Super Admin users have platform-wide access. Their UI is completely separated from tenant business operations. All Super Admin actions are audited.
+
+---
+
+## Architecture Overview
+
+```mermaid
+graph TB
+    subgraph "Frontend Layer"
+        TU[Tenant UI - Bootstrap Templates]
+        SAU[Super Admin UI - Separate Templates]
+    end
+    
+    subgraph "Application Layer"
+        MW[Tenant Middleware]
+        AUTH[Authentication]
+        PERMS[Permission System]
+    end
+    
+    subgraph "Service Layer"
+        CS[Customer Service]
+        VS[Vehicle Service]
+        PS[Policy Service]
+        PMS[Payment Service]
+        DFS[Dynamic Fields Service]
+    end
+    
+    subgraph "Data Layer"
+        TAM[Tenant-Aware Models]
+        AUDIT[Audit Logs]
+    end
+    
+    subgraph "Infrastructure"
+        PG[(PostgreSQL)]
+        RD[(Redis)]
+        CL[Celery Workers]
+    end
+    
+    TU --> MW --> AUTH --> PERMS
+    SAU --> AUTH --> PERMS
+    PERMS --> CS & VS & PS & PMS & DFS
+    CS & VS & PS & PMS & DFS --> TAM
+    TAM --> PG
+    CL --> RD
+```
+
+---
+
+## Proposed Changes
+
+### Core Infrastructure
+
+#### [NEW] [manage.py](file:///c:/Users/JSSD/Documents/Othman_projects/Vehicle_Insurance/manage.py)
+Django management script entry point.
+
+#### [NEW] [requirements.txt](file:///c:/Users/JSSD/Documents/Othman_projects/Vehicle_Insurance/requirements.txt)
+Project dependencies including Django, DRF, psycopg2, redis, celery, django-simple-history, django-auditlog.
+
+#### [NEW] [config/settings/](file:///c:/Users/JSSD/Documents/Othman_projects/Vehicle_Insurance/config/settings/)
+Settings module with base, development, and production configurations.
+
+---
+
+### Multi-Tenancy App (`apps/tenants/`)
+
+#### [NEW] [models.py](file:///c:/Users/JSSD/Documents/Othman_projects/Vehicle_Insurance/apps/tenants/models.py)
+- `Tenant` model: Represents insurance companies
+- Fields: `name`, `slug`, `domain`, `is_active`, `settings` (JSON for fleet policy support, expiry reminder days)
+- Soft delete support via `deleted_at`
+
+#### [NEW] [middleware.py](file:///c:/Users/JSSD/Documents/Othman_projects/Vehicle_Insurance/apps/tenants/middleware.py)
+- `TenantMiddleware`: Extracts tenant from request and sets thread-local context
+- Ensures tenant isolation at request level
+
+#### [NEW] [context.py](file:///c:/Users/JSSD/Documents/Othman_projects/Vehicle_Insurance/apps/tenants/context.py)
+- Thread-local storage for current tenant
+- `get_current_tenant()`, `set_current_tenant()` utilities
+
+#### [NEW] [managers.py](file:///c:/Users/JSSD/Documents/Othman_projects/Vehicle_Insurance/apps/tenants/managers.py)
+- `TenantAwareManager`: Automatically filters queries by current tenant
+- Prevents cross-tenant data access at ORM level
+
+---
+
+### Accounts App (`apps/accounts/`)
+
+#### [NEW] [models.py](file:///c:/Users/JSSD/Documents/Othman_projects/Vehicle_Insurance/apps/accounts/models.py)
+```python
+class User(AbstractUser):
+    tenant = models.ForeignKey('tenants.Tenant', null=True, blank=True)
+    is_super_admin = models.BooleanField(default=False)
+    role = models.CharField(choices=['admin', 'manager', 'agent'])
+    # Constraint: Super Admin has tenant=NULL, tenant users have is_super_admin=False
+```
+
+#### [NEW] [permissions.py](file:///c:/Users/JSSD/Documents/Othman_projects/Vehicle_Insurance/apps/accounts/permissions.py)
+- Role-based permission classes
+- `IsSuperAdmin`, `IsTenantAdmin`, `IsTenantManager`, `IsTenantAgent`
+
+#### [NEW] [views.py](file:///c:/Users/JSSD/Documents/Othman_projects/Vehicle_Insurance/apps/accounts/views.py)
+- Login, logout, password reset views
+- Session-based authentication
+
+---
+
+### Core Domain App (`apps/core/`)
+
+#### [NEW] [models/base.py](file:///c:/Users/JSSD/Documents/Othman_projects/Vehicle_Insurance/apps/core/models/base.py)
+- `TenantAwareModel`: Abstract base for all tenant-scoped models
+- `AuditableModel`: Tracks `created_by`, `updated_by`, timestamps
+- `SoftDeleteModel`: Implements soft delete with `deleted_at`
+
+#### [NEW] [models/customer.py](file:///c:/Users/JSSD/Documents/Othman_projects/Vehicle_Insurance/apps/core/models/customer.py)
+```python
+class Customer(TenantAwareModel, AuditableModel, SoftDeleteModel):
+    customer_type = models.CharField(choices=['individual', 'company'])
+    # Individual fields
+    first_name, last_name, id_number, date_of_birth
+    # Company fields  
+    company_name, registration_number, tax_id
+    # Contact
+    email, phone, address
+```
+
+#### [NEW] [models/vehicle.py](file:///c:/Users/JSSD/Documents/Othman_projects/Vehicle_Insurance/apps/core/models/vehicle.py)
+```python
+class Vehicle(TenantAwareModel, AuditableModel, SoftDeleteModel):
+    vehicle_type = models.CharField(choices=['motorcycle', 'bajaji', 'car'])
+    owner = models.ForeignKey('Customer')
+    registration_number = models.CharField(unique=True)  # Per tenant
+    make, model, year, chassis_number, engine_number
+```
+
+#### [NEW] [models/policy.py](file:///c:/Users/JSSD/Documents/Othman_projects/Vehicle_Insurance/apps/core/models/policy.py)
+```python
+class Policy(TenantAwareModel, AuditableModel, SoftDeleteModel):
+    policy_number = models.CharField(unique=True)  # Per tenant
+    vehicle = models.ForeignKey('Vehicle')
+    # Optional fleet support via ManyToMany if tenant allows
+    start_date, end_date
+    premium_amount
+    status = models.CharField(choices=['draft', 'pending_payment', 'active', 'expired', 'cancelled'])
+    # Policy becomes 'active' ONLY after full payment
+```
+
+#### [NEW] [models/payment.py](file:///c:/Users/JSSD/Documents/Othman_projects/Vehicle_Insurance/apps/core/models/payment.py)
+```python
+class Payment(TenantAwareModel, AuditableModel):
+    policy = models.ForeignKey('Policy')
+    amount = models.DecimalField()
+    payment_date = models.DateTimeField()
+    payment_method = models.CharField(choices=['cash', 'bank_transfer', 'mobile_money'])
+    reference_number = models.CharField()
+```
+
+---
+
+### Dynamic Fields App (`apps/dynamic_fields/`)
+
+#### [NEW] [models.py](file:///c:/Users/JSSD/Documents/Othman_projects/Vehicle_Insurance/apps/dynamic_fields/models.py)
+```python
+class FieldDefinition(TenantAwareModel):
+    """Defines a custom field structure"""
+    name = models.CharField()
+    field_type = models.CharField(choices=['text', 'number', 'date', 'boolean', 'dropdown'])
+    target_model = models.CharField(choices=['customer', 'vehicle', 'policy'])
+    choices = models.JSONField(null=True)  # For dropdown type
+    is_required = models.BooleanField(default=False)
+    order = models.IntegerField()
+
+class FieldValue(models.Model):
+    """Stores values for custom fields"""
+    field_definition = models.ForeignKey('FieldDefinition')
+    content_type = models.ForeignKey(ContentType)
+    object_id = models.PositiveIntegerField()
+    content_object = GenericForeignKey()
+    value = models.JSONField()  # Stores typed value
+```
+
+---
+
+### History Tracking (`django-simple-history` + `django-auditlog`)
+
+**Strategy**: Using a combination approach for comprehensive auditing:
+- **django-simple-history**: Automatic versioning of model instances (full snapshots)
+- **django-auditlog**: Field-level change tracking with diffs (what changed, who did it)
+
+```mermaid
+graph LR
+    M[Model Change] --> SH[django-simple-history]
+    M --> AL[django-auditlog]
+    SH --> HT[Historical Table]
+    AL --> LOG[Audit Log]
+    HT --> VIEW1[View History]
+    HT --> REVERT[Revert Capability]
+    LOG --> DIFF[Field Diffs]
+```
+
+#### [NEW] History-Tracked Models
+
+**Customer, Vehicle, Policy, User** will all have:
+```python
+from simple_history.models import HistoricalRecords
+from auditlog.registry import auditlog
+
+class Customer(TenantAwareModel, AuditableModel, SoftDeleteModel):
+    # ... fields ..
+    history = HistoricalRecords()  # Automatic versioning
+    
+# Register for field-level tracking
+auditlog.register(Customer)
+```
+
+**Benefits**:
+- **Full History**: Every version of a record is preserved
+- **Time Travel**: Query data "as it was" at any point in time
+- **Who Changed What**: Track user responsible for each change
+- **Field-Level Diffs**: See exactly what fields changed
+- **Compliance**: Meet insurance regulatory audit requirements
+
+#### [NEW] [History Views](file:///c:/Users/JSSD/Documents/Othman_projects/Vehicle_Insurance/apps/core/views/history.py)
+- `CustomerHistoryView`: Show all changes to a customer over time
+- `VehicleHistoryView`: Track ownership changes, modifications
+- `PolicyHistoryView`: Complete policy lifecycle (draft → active → expired)
+- `UserActivityView`: Audit trail of user actions
+
+#### Implementation Details
+
+**django-simple-history automatically creates**:
+- `HistoricalCustomer`, `HistoricalVehicle`, `HistoricalPolicy`, `HistoricalUser` tables
+- Fields: All original fields + `history_id`, `history_date`, `history_change_reason`, `history_type` (created/updated/deleted), `history_user`
+
+**Query Examples**:
+```python
+# Get customer as it was on a specific date
+customer.history.as_of(datetime(2024, 1, 1))
+
+# Get all versions
+customer.history.all()
+
+# Most recent change
+customer.history.most_recent()
+
+# Compare versions
+old_version = customer.history.all()[1]
+new_version = customer.history.all()[0]
+diff = new_version.diff_against(old_version)
+```
+
+---
+
+### Services Layer (`apps/core/services/`)
+
+
+#### [NEW] [customer_service.py](file:///c:/Users/JSSD/Documents/Othman_projects/Vehicle_Insurance/apps/core/services/customer_service.py)
+- `create_customer()`, `update_customer()`, `get_customer_history()`
+- Business rule enforcement
+
+#### [NEW] [vehicle_service.py](file:///c:/Users/JSSD/Documents/Othman_projects/Vehicle_Insurance/apps/core/services/vehicle_service.py)
+- `create_vehicle()`, `transfer_ownership()`, `get_vehicle_policies()`
+
+#### [NEW] [policy_service.py](file:///c:/Users/JSSD/Documents/Othman_projects/Vehicle_Insurance/apps/core/services/policy_service.py)
+- `create_policy()`: Creates draft policy
+- `activate_policy()`: Only after full payment
+- `renew_policy()`: Extends existing policy
+- **Critical Rule**: Vehicle cannot have multiple active policies
+
+#### [NEW] [payment_service.py](file:///c:/Users/JSSD/Documents/Othman_projects/Vehicle_Insurance/apps/core/services/payment_service.py)
+- `record_payment()`: Full payment only
+- Triggers policy activation when full amount received
+
+---
+
+### Super Admin App (`apps/super_admin/`)
+
+#### [NEW] [views.py](file:///c:/Users/JSSD/Documents/Othman_projects/Vehicle_Insurance/apps/super_admin/views.py)
+- `TenantListView`, `TenantCreateView`, `TenantUpdateView`
+- `TenantActivateView`, `TenantSuspendView`
+- `AuditLogListView`
+- `UserSupportView` (password reset, disable accounts)
+
+#### [NEW] [services.py](file:///c:/Users/JSSD/Documents/Othman_projects/Vehicle_Insurance/apps/super_admin/services.py)
+- `create_tenant()`, `configure_tenant()`, `suspend_tenant()`
+- All operations logged
+
+#### [NEW] [templates/](file:///c:/Users/JSSD/Documents/Othman_projects/Vehicle_Insurance/apps/super_admin/templates/)
+- Separate, minimal UI for platform management
+- No access to tenant business data
+
+---
+
+### Audit App (`apps/audit/`)
+
+#### [NEW] [models.py](file:///c:/Users/JSSD/Documents/Othman_projects/Vehicle_Insurance/apps/audit/models.py)
+```python
+class AuditLog(models.Model):
+    user = models.ForeignKey('accounts.User')
+    tenant = models.ForeignKey('tenants.Tenant', null=True)  # NULL for Super Admin actions
+    action = models.CharField()
+    model_name = models.CharField()
+    object_id = models.CharField()
+    changes = models.JSONField()
+    ip_address = models.GenericIPAddressField()
+    timestamp = models.DateTimeField(auto_now_add=True)
+```
+
+---
+
+### Reporting App (`apps/reports/`)
+
+#### [NEW] [services.py](file:///c:/Users/JSSD/Documents/Othman_projects/Vehicle_Insurance/apps/reports/services.py)
+- Active policies report
+- Expired policies report
+- Daily/monthly registrations
+- Export to PDF (ReportLab) and Excel (openpyxl)
+
+#### [NEW] [tasks.py](file:///c:/Users/JSSD/Documents/Othman_projects/Vehicle_Insurance/apps/reports/tasks.py)
+- Celery tasks for expiry reminders
+- Background report generation
+
+---
+
+### Notifications App (`apps/notifications/`)
+
+#### [NEW] [models.py](file:///c:/Users/JSSD/Documents/Othman_projects/Vehicle_Insurance/apps/notifications/models.py)
+```python
+class Notification(TenantAwareModel):
+    user = models.ForeignKey('accounts.User')
+    title = models.CharField()
+    message = models.TextField()
+    notification_type = models.CharField(choices=['expiry_reminder', 'system', 'action_required'])
+    is_read = models.BooleanField(default=False)
+```
+
+---
+
+### Frontend Templates
+
+#### [NEW] [templates/base.html](file:///c:/Users/JSSD/Documents/Othman_projects/Vehicle_Insurance/templates/base.html)
+- Clean Bootstrap 5 layout
+- Responsive, accessible design
+
+#### [NEW] [templates/dashboard/](file:///c:/Users/JSSD/Documents/Othman_projects/Vehicle_Insurance/templates/dashboard/)
+- Tenant dashboard with key metrics
+- Notification alerts
+- Quick actions
+
+#### [NEW] [static/css/](file:///c:/Users/JSSD/Documents/Othman_projects/Vehicle_Insurance/static/css/)
+- Custom CSS for professional, minimal UI
+
+---
+
+## Project Structure
+
+```
+Vehicle_Insurance/
+├── config/
+│   ├── __init__.py
+│   ├── celery.py
+│   ├── urls.py
+│   ├── wsgi.py
+│   └── settings/
+│       ├── __init__.py
+│       ├── base.py
+│       ├── development.py
+│       └── production.py
+├── apps/
+│   ├── __init__.py
+│   ├── tenants/           # Multi-tenancy core
+│   ├── accounts/          # User management
+│   ├── core/              # Business models (Customer, Vehicle, Policy, Payment)
+│   ├── dynamic_fields/    # Configurable fields
+│   ├── super_admin/       # Platform management
+│   ├── audit/             # Audit logging
+│   ├── reports/           # Reporting & exports
+│   └── notifications/     # Dashboard alerts
+├── templates/
+│   ├── base.html
+│   ├── components/
+│   ├── dashboard/
+│   ├── customers/
+│   ├── vehicles/
+│   ├── policies/
+│   └── super_admin/
+├── static/
+│   ├── css/
+│   ├── js/
+│   └── images/
+├── manage.py
+├── requirements.txt
+└── .env.example
+```
+
+---
+
+## Key Design Decisions Explained
+
+### 1. Row-Level Multi-Tenancy (tenant_id)
+
+**Why**: For a vehicle insurance system serving multiple insurance companies, shared schema with `tenant_id` provides:
+- **Cost efficiency**: Single database, no separate schema complexity
+- **Simple migrations**: One schema to maintain
+- **Easy to implement**: Filter all queries by tenant
+- **Scalable**: Can handle hundreds of tenants
+
+**Implementation**:
+```python
+class TenantAwareModel(models.Model):
+    tenant = models.ForeignKey('tenants.Tenant', on_delete=models.PROTECT)
+    
+    class Meta:
+        abstract = True
+    
+    def save(self, *args, **kwargs):
+        if not self.tenant_id:
+            self.tenant = get_current_tenant()
+        super().save(*args, **kwargs)
+```
+
+### 2. Service Layer Pattern
+
+**Why**: Keeping business logic out of views and models ensures:
+- **Testability**: Services can be unit tested in isolation
+- **Maintainability**: Business rules are in one place
+- **Reusability**: Same logic for web views and future APIs
+
+### 3. Super Admin Separation
+
+**Why**: Super Admin is the most privileged (and dangerous) user:
+- Separate URLs, views, and templates
+- Cannot access tenant business models directly
+- All actions audited for accountability
+
+### 4. Soft Delete Pattern
+
+**Why**: Insurance data must be preserved for legal/compliance:
+- No data loss from accidental deletes
+- Historical integrity maintained
+- Can recover from mistakes
+
+### 5. Dynamic Fields Architecture
+
+**Why**: Insurance companies have different data needs:
+- `FieldDefinition` stores structure (type, choices, order)
+- `FieldValue` stores actual data
+- Queryable through ContentType framework
+- Performant via proper indexing
+
+### 6. History Tracking Strategy (django-simple-history + django-auditlog)
+
+**Why**: Insurance is a highly regulated industry requiring complete audit trails:
+- **Regulatory Compliance**: GDPR, insurance regulations require tracking who changed what and when
+- **Dispute Resolution**: Complete history helps resolve policy or claims disputes
+- **Fraud Detection**: Unusual edit patterns can indicate fraud
+- **Business Intelligence**: Understand how policies and customers evolve over time
+
+**Dual Approach**:
+1. **django-simple-history**: Creates shadow tables with full snapshots of each version
+   - Enables "time travel" - query data as it was at any point
+   - Rollback capability if needed
+   - Complete preservation of historical state
+
+2. **django-auditlog**: Stores field-level diffs in JSON
+   - Shows exactly what changed (field A: old value → new value)
+   - More storage-efficient for analyzing specific changes
+   - Better for compliance reports showing "what was modified"
+
+**World-class Implementation**: This dual approach is used by major SaaS platforms (Salesforce, HubSpot) because it provides both detailed diffs AND complete state snapshots.
+
+---
+
+## Verification Plan
+
+### Automated Tests
+
+**Run all tests:**
+```powershell
+python manage.py test --settings=config.settings.development
+```
+
+**Test categories:**
+
+1. **Multi-Tenancy Isolation Tests** (`apps/tenants/tests/`)
+   - Verify users cannot access other tenant's data
+   - Test tenant middleware correctly sets context
+   - Test tenant-aware managers filter correctly
+
+2. **Business Logic Tests** (`apps/core/tests/`)
+   - Policy activation only with full payment
+   - Vehicle cannot have multiple active policies
+   - Customer history preservation
+
+3. **Super Admin Permission Tests** (`apps/super_admin/tests/`)
+   - Super Admin cannot access tenant business views
+   - Tenant users cannot access Super Admin views
+
+4. **History Tracking Tests** (`apps/core/tests/test_history.py`)
+   - Verify historical records created on update
+   - Test `as_of()` time travel queries
+   - Test user attribution in history
+   - Verify audit log entries for all changes
+   - Test history isolation per tenant
+
+### Manual Verification
+
+**To be performed after implementation:**
+
+1. **Multi-Tenancy Test**:
+   - Create 2 tenants with different users
+   - Login as Tenant A user, create customer
+   - Login as Tenant B user, verify customer NOT visible
+   
+2. **Policy Workflow Test**:
+   - Create customer → vehicle → policy (draft)
+   - Try to activate without payment (should fail)
+   - Record full payment
+   - Verify policy becomes active
+   - Try creating second active policy on same vehicle (should fail)
+
+3. **Super Admin Test**:
+   - Login as Super Admin
+   - Verify can see tenant list
+   - Verify CANNOT access customer/vehicle/policy forms
+   - Create new tenant, verify audit log entry
+
+---
+
+## Learning Points (Educational Content)
+
+After implementation, I will explain:
+
+1. **Why middleware for tenant context** - Thread-local storage pattern
+2. **Why soft deletes** - Data integrity in regulated industries
+3. **Why service layer** - Separation of concerns and testability
+4. **Why explicit permissions** - Security by design
+5. **How dynamic fields work** - ContentType framework power
+6. **How Celery handles background tasks** - Async processing patterns
+7. **History tracking architecture** - Django signals, model versioning, and audit trails
+8. **Multi-table history queries** - Performance considerations and indexing strategies
+
+---
+
+## Next Steps After Approval
+
+1. Create virtual environment and install dependencies
+2. Initialize Django project structure
+3. Implement multi-tenancy foundation
+4. Build authentication system
+5. Create core domain models
+6. Develop service layer
+7. Build Super Admin module
+8. Implement tenant UI
+9. Add reporting and notifications
+10. Test and polish
+

@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="flex items-center justify-between mb-4">
+  <h1 class="text-xl font-semibold">Policies</h1>
+  <div class="flex gap-2">
+    <a href="{% url 'dashboard:policies_create' %}" class="inline-flex items-center rounded bg-sky-600 px-3 py-2 text-white hover:bg-sky-700">New Policy</a>
+    <a href="{% url 'dashboard:payments_create' %}" class="inline-flex items-center rounded border border-sky-600 text-sky-700 hover:bg-sky-50 px-3 py-2">Record Payment</a>
+  </div>
+</div>
+
+<form method="get" class="grid grid-cols-12 gap-3 mb-4" role="search" aria-label="Search policies">
+  <div class="col-span-12 md:col-span-6">
+    <input type="text" name="q" placeholder="Search policy number, reg no, customer" value="{{ request.GET.q }}" class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500" />
+  </div>
+  <div class="col-span-12 md:col-span-3">
+    <select name="status" class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+      <option value="">Any status</option>
+      <option value="draft" {% if request.GET.status == 'draft' %}selected{% endif %}>Draft</option>
+      <option value="pending_payment" {% if request.GET.status == 'pending_payment' %}selected{% endif %}>Pending Payment</option>
+      <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>Active</option>
+      <option value="expired" {% if request.GET.status == 'expired' %}selected{% endif %}>Expired</option>
+      <option value="cancelled" {% if request.GET.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+    </select>
+  </div>
+  <div class="col-span-12 md:col-span-2">
+    <button class="w-full inline-flex items-center justify-center rounded border border-gray-300 px-3 py-2 text-sm hover:bg-gray-50" type="submit">Filter</button>
+  </div>
+</form>
+
+<div class="overflow-x-auto rounded border border-gray-200 bg-white">
+  <table class="min-w-full text-sm">
+    <thead class="bg-gray-50 text-left text-gray-600">
+      <tr>
+        <th class="px-3 py-2">Policy #</th>
+        <th class="px-3 py-2">Vehicle</th>
+        <th class="px-3 py-2">Customer</th>
+        <th class="px-3 py-2">Period</th>
+        <th class="px-3 py-2">Premium</th>
+        <th class="px-3 py-2">Status</th>
+        <th class="px-3 py-2 text-right">Actions</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100">
+      {% for p in policies %}
+      <tr class="hover:bg-gray-50">
+        <td class="px-3 py-2 font-medium">{{ p.policy_number }}</td>
+        <td class="px-3 py-2">{{ p.vehicle.registration_number }} ({{ p.vehicle.make }} {{ p.vehicle.model }})</td>
+        <td class="px-3 py-2">
+          {% if p.vehicle.owner.customer_type == 'individual' %}
+            {{ p.vehicle.owner.first_name }} {{ p.vehicle.owner.last_name }}
+          {% else %}
+            {{ p.vehicle.owner.company_name }}
+          {% endif %}
+        </td>
+        <td class="px-3 py-2">{{ p.start_date|date:"Y-m-d" }} → {{ p.end_date|date:"Y-m-d" }}</td>
+        <td class="px-3 py-2">{{ p.premium_amount }}</td>
+        <td class="px-3 py-2">
+          {% if p.status == 'active' %}<span class="inline-flex rounded bg-green-100 text-green-800 px-2 py-1 text-xs">Active</span>{% endif %}
+          {% if p.status == 'pending_payment' %}<span class="inline-flex rounded bg-yellow-100 text-yellow-800 px-2 py-1 text-xs">Pending</span>{% endif %}
+          {% if p.status == 'draft' %}<span class="inline-flex rounded bg-gray-200 text-gray-800 px-2 py-1 text-xs">Draft</span>{% endif %}
+          {% if p.status == 'expired' %}<span class="inline-flex rounded bg-gray-800 text-white px-2 py-1 text-xs">Expired</span>{% endif %}
+          {% if p.status == 'cancelled' %}<span class="inline-flex rounded bg-red-100 text-red-800 px-2 py-1 text-xs">Cancelled</span>{% endif %}
+        </td>
+        <td class="px-3 py-2 text-right">
+          <a class="inline-flex items-center rounded border border-gray-300 px-2 py-1 hover:bg-gray-50" href="{% url 'dashboard:policies_detail' p.pk %}">View</a>
+          <a class="inline-flex items-center rounded border border-sky-600 text-sky-700 hover:bg-sky-50 px-2 py-1" href="{% url 'dashboard:policies_update' p.pk %}">Edit</a>
+          <a class="inline-flex items-center rounded bg-green-600 px-2 py-1 text-white hover:bg-green-700" href="{% url 'dashboard:payments_create' %}?policy={{ p.pk }}">Record Payment</a>
+          {% if p.status != 'cancelled' %}
+          <form method="post" action="{% url 'dashboard:policies_cancel' p.pk %}" class="inline" onsubmit="return confirm('Cancel this policy?');">
+            {% csrf_token %}
+            <input type="hidden" name="reason" value="Cancelled via list" />
+            <button type="submit" class="inline-flex items-center rounded border border-red-600 text-red-700 hover:bg-red-50 px-2 py-1">Cancel</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7" class="px-3 py-6 text-center text-gray-500">No policies found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="mt-4 flex items-center gap-2 text-sm">
+  {% if page_obj.has_previous %}
+    <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?page=1">First</a>
+    <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?page={{ page_obj.previous_page_number }}">Prev</a>
+  {% else %}
+    <span class="rounded border px-2 py-1 opacity-50 cursor-not-allowed">First</span>
+    <span class="rounded border px-2 py-1 opacity-50 cursor-not-allowed">Prev</span>
+  {% endif %}
+  <span class="px-2 py-1">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+  {% if page_obj.has_next %}
+    <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?page={{ page_obj.next_page_number }}">Next</a>
+    <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?page={{ page_obj.paginator.num_pages }}">Last</a>
+  {% else %}
+    <span class="rounded border px-2 py-1 opacity-50 cursor-not-allowed">Next</span>
+    <span class="rounded border px-2 py-1 opacity-50 cursor-not-allowed">Last</span>
+  {% endif %}
+</div>
+{% endblock %}

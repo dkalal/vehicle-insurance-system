@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="flex items-center justify-between mb-4">
+  <h1 class="text-xl font-semibold">Customers</h1>
+  <a href="{% url 'dashboard:customers_create' %}" class="inline-flex items-center rounded bg-sky-600 px-3 py-2 text-white hover:bg-sky-700">New Customer</a>
+  </div>
+
+<form method="get" class="grid grid-cols-12 gap-3 mb-4" role="search" aria-label="Search customers">
+  <div class="col-span-12 md:col-span-8">
+    <input type="text" name="q" placeholder="Search name, email, phone, ID, registration" value="{{ request.GET.q }}" class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500" />
+  </div>
+  <div class="col-span-12 md:col-span-2">
+    <button class="w-full inline-flex items-center justify-center rounded border border-gray-300 px-3 py-2 text-sm hover:bg-gray-50" type="submit">Search</button>
+  </div>
+</form>
+
+<div class="overflow-x-auto rounded border border-gray-200 bg-white">
+  <table class="min-w-full text-sm">
+    <thead class="bg-gray-50 text-left text-gray-600">
+      <tr>
+        <th class="px-3 py-2">Name</th>
+        <th class="px-3 py-2">Type</th>
+        <th class="px-3 py-2">Email</th>
+        <th class="px-3 py-2">Phone</th>
+        <th class="px-3 py-2">Created</th>
+        <th class="px-3 py-2 text-right">Actions</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100">
+      {% for c in customers %}
+      <tr class="hover:bg-gray-50">
+        <td class="px-3 py-2">
+          {% if c.customer_type == 'individual' %}
+            {{ c.first_name }} {{ c.last_name }}
+          {% else %}
+            {{ c.company_name }}
+          {% endif %}
+        </td>
+        <td class="px-3 py-2">{{ c.get_customer_type_display }}</td>
+        <td class="px-3 py-2">{{ c.email }}</td>
+        <td class="px-3 py-2">{{ c.phone }}</td>
+        <td class="px-3 py-2">{{ c.created_at|date:"Y-m-d" }}</td>
+        <td class="px-3 py-2 text-right">
+          <a href="{% url 'dashboard:customers_update' c.pk %}" class="inline-flex items-center rounded border border-sky-600 text-sky-700 hover:bg-sky-50 px-2 py-1">Edit</a>
+          {% if request.user.role == 'admin' or request.user.role == 'manager' %}
+          <form method="post" action="{% url 'dashboard:customers_delete' c.pk %}" class="inline" onsubmit="return confirm('Delete this customer?');">
+            {% csrf_token %}
+            <button type="submit" class="inline-flex items-center rounded border border-red-600 text-red-700 hover:bg-red-50 px-2 py-1">Delete</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="6" class="px-3 py-6 text-center text-gray-500">No customers found.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="mt-4 flex items-center gap-2 text-sm">
+  {% if page_obj.has_previous %}
+    <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?page=1">First</a>
+    <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?page={{ page_obj.previous_page_number }}">Prev</a>
+  {% else %}
+    <span class="rounded border px-2 py-1 opacity-50 cursor-not-allowed">First</span>
+    <span class="rounded border px-2 py-1 opacity-50 cursor-not-allowed">Prev</span>
+  {% endif %}
+
+  <span class="px-2 py-1">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+
+  {% if page_obj.has_next %}
+    <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?page={{ page_obj.next_page_number }}">Next</a>
+    <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?page={{ page_obj.paginator.num_pages }}">Last</a>
+  {% else %}
+    <span class="rounded border px-2 py-1 opacity-50 cursor-not-allowed">Next</span>
+    <span class="rounded border px-2 py-1 opacity-50 cursor-not-allowed">Last</span>
+  {% endif %}
+</div>
+{% endblock %}

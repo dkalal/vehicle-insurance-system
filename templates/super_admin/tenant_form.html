@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2 class="text-xl font-semibold mb-4">{% if form.instance.pk %}Edit Tenant{% else %}New Tenant{% endif %}</h2>
+<form method="post" class="bg-white rounded shadow p-4 space-y-4">
+  {% csrf_token %}
+  {{ form.non_field_errors }}
+  <div class="grid grid-cols-12 gap-4">
+    <div class="col-span-12 md:col-span-6">
+      {{ form.name.label_tag }} {{ form.name }}
+    </div>
+    <div class="col-span-12 md:col-span-6">
+      {{ form.slug.label_tag }} {{ form.slug }}
+    </div>
+    <div class="col-span-12 md:col-span-6">
+      {{ form.domain.label_tag }} {{ form.domain }}
+    </div>
+    <div class="col-span-12 md:col-span-6">
+      {{ form.contact_email.label_tag }} {{ form.contact_email }}
+    </div>
+    <div class="col-span-12 md:col-span-6">
+      {{ form.contact_phone.label_tag }} {{ form.contact_phone }}
+    </div>
+    <div class="col-span-12 md:col-span-6 flex items-center gap-2">
+      {{ form.is_active }} {{ form.is_active.label_tag }}
+    </div>
+    <div class="col-span-12">
+      {{ form.settings.label_tag }} {{ form.settings }}
+    </div>
+  </div>
+  <div class="flex gap-2">
+    <a class="inline-flex items-center rounded border px-3 py-2 text-sm hover:bg-gray-50" href="{% url 'super_admin:tenants' %}">Cancel</a>
+    <button class="inline-flex items-center rounded bg-sky-600 px-4 py-2 text-white hover:bg-sky-700" type="submit">Save</button>
+  </div>
+</form>
+{% endblock %}

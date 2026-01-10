@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="text-xl font-semibold mb-4">Update Support Request</h1>
+
+<form method="post" class="bg-white rounded shadow p-4 space-y-4" novalidate>
+  {% csrf_token %}
+
+  {% if form.non_field_errors %}
+  <div class="rounded border-l-4 border-red-500 bg-red-50 p-3 text-red-800">{{ form.non_field_errors }}</div>
+  {% endif %}
+
+  <div>
+    <label class="block text-sm font-medium text-gray-700" for="id_status">Status</label>
+    {{ form.status }}
+    {{ form.status.errors }}
+  </div>
+  <div>
+    <label class="block text-sm font-medium text-gray-700" for="id_priority">Priority</label>
+    {{ form.priority }}
+    {{ form.priority.errors }}
+  </div>
+  <div>
+    <label class="block text-sm font-medium text-gray-700" for="id_assigned_to">Assigned to</label>
+    {{ form.assigned_to }}
+    {{ form.assigned_to.errors }}
+  </div>
+  <div>
+    <label class="block text-sm font-medium text-gray-700" for="id_resolved_at">Resolved at</label>
+    {{ form.resolved_at }}
+    {{ form.resolved_at.errors }}
+  </div>
+
+  <div class="flex gap-2 pt-2">
+    <a href="{% url 'super_admin:support_list' %}" class="inline-flex items-center rounded border px-3 py-2 text-sm hover:bg-gray-50">Cancel</a>
+    <button class="inline-flex items-center rounded bg-sky-600 px-4 py-2 text-white hover:bg-sky-700" type="submit">Save</button>
+  </div>
+</form>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="text-xl font-semibold mb-4">New Support Request</h1>
+<form method="post" novalidate class="bg-white rounded shadow p-4">
+  {% csrf_token %}
+  <div class="grid grid-cols-12 gap-4">
+    <div class="col-span-12 md:col-span-8">
+      <label class="block text-sm font-medium text-gray-700" for="id_subject">Subject</label>
+      {{ form.subject }}
+    </div>
+    <div class="col-span-12 md:col-span-4">
+      <label class="block text-sm font-medium text-gray-700" for="id_priority">Priority</label>
+      {{ form.priority }}
+    </div>
+    <div class="col-span-12">
+      <label class="block text-sm font-medium text-gray-700" for="id_message">Message</label>
+      {{ form.message }}
+    </div>
+  </div>
+  <div class="mt-6 flex gap-2">
+    <button type="submit" class="inline-flex items-center rounded bg-sky-600 px-4 py-2 text-white hover:bg-sky-700">Submit</button>
+    <a href="{% url 'dashboard:support_list' %}" class="inline-flex items-center rounded border px-3 py-2 text-sm hover:bg-gray-50">Cancel</a>
+  </div>
+</form>
+{% endblock %}

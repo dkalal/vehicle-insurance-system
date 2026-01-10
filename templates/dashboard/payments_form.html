@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="text-xl font-semibold mb-4">Record Payment</h1>
+<form method="post" novalidate class="bg-white rounded shadow p-4">
+  {% csrf_token %}
+  <div class="grid grid-cols-12 gap-4">
+    <div class="col-span-12 md:col-span-6">
+      <label class="block text-sm font-medium text-gray-700" for="id_policy">Policy</label>
+      {{ form.policy }}
+    </div>
+    <div class="col-span-12 md:col-span-3">
+      <label class="block text-sm font-medium text-gray-700" for="id_amount">Amount</label>
+      {{ form.amount }}
+    </div>
+    <div class="col-span-12 md:col-span-3">
+      <label class="block text-sm font-medium text-gray-700" for="id_payment_method">Method</label>
+      {{ form.payment_method }}
+    </div>
+    <div class="col-span-12 md:col-span-6">
+      <label class="block text-sm font-medium text-gray-700" for="id_reference_number">Reference</label>
+      {{ form.reference_number }}
+    </div>
+    <div class="col-span-12 md:col-span-6">
+      <label class="block text-sm font-medium text-gray-700" for="id_payer_name">Payer Name</label>
+      {{ form.payer_name }}
+    </div>
+    <div class="col-span-12">
+      <label class="block text-sm font-medium text-gray-700" for="id_notes">Notes</label>
+      {{ form.notes }}
+    </div>
+  </div>
+  <div class="mt-6 flex gap-2">
+    <button type="submit" class="inline-flex items-center rounded bg-sky-600 px-4 py-2 text-white hover:bg-sky-700">Save</button>
+    <a href="{% url 'dashboard:policies_list' %}" class="inline-flex items-center rounded border px-3 py-2 text-sm hover:bg-gray-50">Cancel</a>
+  </div>
+</form>
+{% endblock %}

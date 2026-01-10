@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% load dict_extras %}
+{% block content %}
+<h1 class="text-xl font-semibold mb-4">{% if form.instance.pk %}Edit Policy{% else %}New Policy{% endif %}</h1>
+<form method="post" novalidate class="bg-white rounded shadow p-4">
+  {% csrf_token %}
+  <div class="grid grid-cols-12 gap-4">
+    <div class="col-span-12 md:col-span-6">
+      <label class="block text-sm font-medium text-gray-700" for="id_vehicle">Vehicle</label>
+      {{ form.vehicle }}
+    </div>
+    <div class="col-span-12 md:col-span-3">
+      <label class="block text-sm font-medium text-gray-700" for="id_start_date">Start Date</label>
+      {{ form.start_date }}
+    </div>
+    <div class="col-span-12 md:col-span-3">
+      <label class="block text-sm font-medium text-gray-700" for="id_end_date">End Date</label>
+      {{ form.end_date }}
+    </div>
+    <div class="col-span-12 md:col-span-4">
+      <label class="block text-sm font-medium text-gray-700" for="id_premium_amount">Premium Amount</label>
+      {{ form.premium_amount }}
+    </div>
+    <div class="col-span-12 md:col-span-4">
+      <label class="block text-sm font-medium text-gray-700" for="id_coverage_amount">Coverage Amount</label>
+      {{ form.coverage_amount }}
+    </div>
+    <div class="col-span-12 md:col-span-4">
+      <label class="block text-sm font-medium text-gray-700" for="id_policy_type">Policy Type</label>
+      {{ form.policy_type }}
+    </div>
+    <div class="col-span-12">
+      <label class="block text-sm font-medium text-gray-700" for="id_notes">Notes</label>
+      {{ form.notes }}
+    </div>
+  </div>
+  {% if df_defs %}
+  <hr class="my-6" />
+  <h2 class="text-lg font-medium mb-2">Additional Fields</h2>
+  <div class="grid grid-cols-12 gap-4">
+    {% for d in df_defs %}
+      <div class="col-span-12 md:col-span-6">
+        <label class="block text-sm font-medium text-gray-700" for="id_df_{{ d.key }}">{{ d.name }}{% if d.is_required %} <span class="text-red-600" aria-hidden="true">*</span>{% endif %}</label>
+        {% if d.data_type == 'text' %}
+          <input id="id_df_{{ d.key }}" name="df_{{ d.key }}" type="text" class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500" value="{{ df_values|get_item:d.key }}" {% if d.is_required %}required{% endif %} />
+        {% elif d.data_type == 'number' %}
+          <input id="id_df_{{ d.key }}" name="df_{{ d.key }}" type="number" step="any" class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500" value="{{ df_values|get_item:d.key }}" {% if d.is_required %}required{% endif %} />
+        {% elif d.data_type == 'date' %}
+          <input id="id_df_{{ d.key }}" name="df_{{ d.key }}" type="date" class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500" value="{{ df_values|get_item:d.key }}" {% if d.is_required %}required{% endif %} />
+        {% elif d.data_type == 'boolean' %}
+          <select id="id_df_{{ d.key }}" name="df_{{ d.key }}" class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500" {% if d.is_required %}required{% endif %}>
+            <option value="">Select...</option>
+            <option value="true" {% if df_values|get_item:d.key|stringformat:"s" == 'True' or df_values|get_item:d.key == 'true' %}selected{% endif %}>Yes</option>
+            <option value="false" {% if df_values|get_item:d.key|stringformat:"s" == 'False' or df_values|get_item:d.key == 'false' %}selected{% endif %}>No</option>
+          </select>
+        {% elif d.data_type == 'dropdown' %}
+          <select id="id_df_{{ d.key }}" name="df_{{ d.key }}" class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500" {% if d.is_required %}required{% endif %}>
+            <option value="">Select...</option>
+            {% for opt in d.options %}
+              <option value="{{ opt }}" {% if df_values|get_item:d.key == opt %}selected{% endif %}>{{ opt }}</option>
+            {% endfor %}
+          </select>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+  <div class="mt-6 flex gap-2">
+    <button type="submit" class="inline-flex items-center rounded bg-sky-600 px-4 py-2 text-white hover:bg-sky-700">Save</button>
+    <a href="{% url 'dashboard:policies_list' %}" class="inline-flex items-center rounded border px-3 py-2 text-sm hover:bg-gray-50">Cancel</a>
+  </div>
+</form>
+{% endblock %}

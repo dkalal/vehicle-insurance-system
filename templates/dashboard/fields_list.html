@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="flex items-center justify-between mb-4">
+  <h1 class="text-xl font-semibold">Additional Fields</h1>
+  <a href="{% url 'dashboard:fields_create' %}" class="inline-flex items-center rounded bg-sky-600 px-3 py-2 text-white hover:bg-sky-700">New Field</a>
+</div>
+
+<div class="overflow-x-auto rounded border border-gray-200 bg-white">
+  <table class="min-w-full text-sm">
+    <thead class="bg-gray-50 text-left text-gray-600">
+      <tr>
+        <th class="px-3 py-2">Entity</th>
+        <th class="px-3 py-2">Name</th>
+        <th class="px-3 py-2">Key</th>
+        <th class="px-3 py-2">Type</th>
+        <th class="px-3 py-2">Required</th>
+        <th class="px-3 py-2">Active</th>
+        <th class="px-3 py-2">Order</th>
+        <th class="px-3 py-2 text-right">Actions</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100">
+      {% for f in fields %}
+      <tr class="hover:bg-gray-50">
+        <td class="px-3 py-2 capitalize">{{ f.entity_type }}</td>
+        <td class="px-3 py-2">{{ f.name }}</td>
+        <td class="px-3 py-2"><code>{{ f.key }}</code></td>
+        <td class="px-3 py-2">{{ f.data_type }}</td>
+        <td class="px-3 py-2">{% if f.is_required %}Yes{% else %}No{% endif %}</td>
+        <td class="px-3 py-2">{% if f.is_active %}Yes{% else %}No{% endif %}</td>
+        <td class="px-3 py-2">{{ f.order }}</td>
+        <td class="px-3 py-2 text-right">
+          <a class="inline-flex items-center rounded border border-gray-300 px-2 py-1 hover:bg-gray-50" href="{% url 'dashboard:fields_update' f.pk %}">Edit</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="8" class="px-3 py-6 text-center text-gray-500">No fields defined.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if is_paginated %}
+<div class="mt-4 flex items-center gap-2 text-sm">
+  {% if page_obj.has_previous %}
+    <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?page=1">First</a>
+    <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?page={{ page_obj.previous_page_number }}">Prev</a>
+  {% else %}
+    <span class="rounded border px-2 py-1 opacity-50 cursor-not-allowed">First</span>
+    <span class="rounded border px-2 py-1 opacity-50 cursor-not-allowed">Prev</span>
+  {% endif %}
+  <span class="px-2 py-1">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+  {% if page_obj.has_next %}
+    <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?page={{ page_obj.next_page_number }}">Next</a>
+    <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?page={{ page_obj.paginator.num_pages }}">Last</a>
+  {% else %}
+    <span class="rounded border px-2 py-1 opacity-50 cursor-not-allowed">Next</span>
+    <span class="rounded border px-2 py-1 opacity-50 cursor-not-allowed">Last</span>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

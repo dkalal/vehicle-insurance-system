@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+<div>
+  <h1 class="text-xl font-semibold">Dashboard</h1>
+  <p class="text-sm text-gray-600 mb-4">Welcome{% if current_tenant %} to {{ current_tenant.name }}{% endif %}. Here are your key metrics.</p>
+
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="bg-white rounded shadow p-4">
+      <div class="text-gray-500 text-sm">Active Policies</div>
+      <div class="text-3xl font-semibold">{{ metrics.active_policies }}</div>
+    </div>
+    <div class="bg-white rounded shadow p-4">
+      <div class="text-gray-500 text-sm">Expiring Soon</div>
+      <div class="text-3xl font-semibold">{{ metrics.expiring_soon }}</div>
+    </div>
+    <div class="bg-white rounded shadow p-4">
+      <div class="text-gray-500 text-sm">Vehicles</div>
+      <div class="text-3xl font-semibold">{{ metrics.vehicles }}</div>
+    </div>
+    <div class="bg-white rounded shadow p-4">
+      <div class="text-gray-500 text-sm">Customers</div>
+      <div class="text-3xl font-semibold">{{ metrics.customers }}</div>
+    </div>
+  </div>
+</div>
+{% endblock %}

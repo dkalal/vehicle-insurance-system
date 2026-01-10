@@ -1,0 +1,1 @@
+For running on the port 8001 /home/dk/Documents/Vehicle_Insurance/venv/bin/python manage.py runserver 127.0.0.1:8001

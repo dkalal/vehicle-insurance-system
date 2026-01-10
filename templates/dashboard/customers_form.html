@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% load dict_extras %}
+{% block content %}
+<h1 class="text-xl font-semibold mb-4">{% if form.instance.pk %}Edit Customer{% else %}New Customer{% endif %}</h1>
+
+<form method="post" novalidate class="bg-white rounded shadow p-4">
+  {% csrf_token %}
+
+  <div class="grid grid-cols-12 gap-4">
+    <div class="col-span-12 md:col-span-4">
+      <label class="block text-sm font-medium text-gray-700" for="id_customer_type">Customer Type</label>
+      {{ form.customer_type }}
+    </div>
+  </div>
+
+  <div id="section-individual" class="grid grid-cols-12 gap-4 mt-2">
+    <div class="col-span-12 md:col-span-6">
+      <label class="block text-sm font-medium text-gray-700" for="id_first_name">First name</label>
+      {{ form.first_name }}
+    </div>
+    <div class="col-span-12 md:col-span-6">
+      <label class="block text-sm font-medium text-gray-700" for="id_last_name">Last name</label>
+      {{ form.last_name }}
+    </div>
+    <div class="col-span-12 md:col-span-6">
+      <label class="block text-sm font-medium text-gray-700" for="id_id_number">ID Number</label>
+      {{ form.id_number }}
+    </div>
+    <div class="col-span-12 md:col-span-6">
+      <label class="block text-sm font-medium text-gray-700" for="id_date_of_birth">Date of Birth</label>
+      {{ form.date_of_birth }}
+    </div>
+  </div>
+
+  <div id="section-company" class="grid grid-cols-12 gap-4 mt-2">
+    <div class="col-span-12 md:col-span-8">
+      <label class="block text-sm font-medium text-gray-700" for="id_company_name">Company name</label>
+      {{ form.company_name }}
+    </div>
+    <div class="col-span-12 md:col-span-4">
+      <label class="block text-sm font-medium text-gray-700" for="id_registration_number">Registration No.</label>
+      {{ form.registration_number }}
+    </div>
+    <div class="col-span-12 md:col-span-6">
+      <label class="block text-sm font-medium text-gray-700" for="id_tax_id">Tax ID</label>
+      {{ form.tax_id }}
+    </div>
+  </div>
+
+  <div class="grid grid-cols-12 gap-4 mt-2">
+    <div class="col-span-12 md:col-span-6">
+      <label class="block text-sm font-medium text-gray-700" for="id_email">Email</label>
+      {{ form.email }}
+    </div>
+    <div class="col-span-12 md:col-span-6">
+      <label class="block text-sm font-medium text-gray-700" for="id_phone">Phone</label>
+      {{ form.phone }}
+    </div>
+    <div class="col-span-12">
+      <label class="block text-sm font-medium text-gray-700" for="id_address">Address</label>
+      {{ form.address }}
+    </div>
+    <div class="col-span-12 md:col-span-4">
+      <label class="block text-sm font-medium text-gray-700" for="id_city">City</label>
+      {{ form.city }}
+    </div>
+    <div class="col-span-12 md:col-span-4">
+      <label class="block text-sm font-medium text-gray-700" for="id_region">Region</label>
+      {{ form.region }}
+    </div>
+    <div class="col-span-12 md:col-span-4">
+      <label class="block text-sm font-medium text-gray-700" for="id_postal_code">Postal Code</label>
+      {{ form.postal_code }}
+    </div>
+    <div class="col-span-12">
+      <label class="block text-sm font-medium text-gray-700" for="id_notes">Notes</label>
+      {{ form.notes }}
+    </div>
+  </div>
+
+  {% if df_defs %}
+  <hr class="my-6" />
+  <h2 class="text-lg font-medium mb-2">Additional Fields</h2>
+  <div class="grid grid-cols-12 gap-4">
+    {% for d in df_defs %}
+      <div class="col-span-12 md:col-span-6">
+        <label class="block text-sm font-medium text-gray-700" for="id_df_{{ d.key }}">{{ d.name }}{% if d.is_required %} <span class="text-red-600" aria-hidden="true">*</span>{% endif %}</label>
+        {% if d.data_type == 'text' %}
+          <input id="id_df_{{ d.key }}" name="df_{{ d.key }}" type="text" class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500" value="{{ df_values|get_item:d.key }}" {% if d.is_required %}required{% endif %} />
+        {% elif d.data_type == 'number' %}
+          <input id="id_df_{{ d.key }}" name="df_{{ d.key }}" type="number" step="any" class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500" value="{{ df_values|get_item:d.key }}" {% if d.is_required %}required{% endif %} />
+        {% elif d.data_type == 'date' %}
+          <input id="id_df_{{ d.key }}" name="df_{{ d.key }}" type="date" class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500" value="{{ df_values|get_item:d.key }}" {% if d.is_required %}required{% endif %} />
+        {% elif d.data_type == 'boolean' %}
+          <select id="id_df_{{ d.key }}" name="df_{{ d.key }}" class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500" {% if d.is_required %}required{% endif %}>
+            <option value="">Select...</option>
+            <option value="true" {% if df_values|get_item:d.key|stringformat:"s" == 'True' or df_values|get_item:d.key == 'true' %}selected{% endif %}>Yes</option>
+            <option value="false" {% if df_values|get_item:d.key|stringformat:"s" == 'False' or df_values|get_item:d.key == 'false' %}selected{% endif %}>No</option>
+          </select>
+        {% elif d.data_type == 'dropdown' %}
+          <select id="id_df_{{ d.key }}" name="df_{{ d.key }}" class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500" {% if d.is_required %}required{% endif %}>
+            <option value="">Select...</option>
+            {% for opt in d.options %}
+              <option value="{{ opt }}" {% if df_values|get_item:d.key == opt %}selected{% endif %}>{{ opt }}</option>
+            {% endfor %}
+          </select>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="mt-6 flex gap-2">
+    <button class="inline-flex items-center rounded bg-sky-600 px-4 py-2 text-white hover:bg-sky-700" type="submit">Save</button>
+    <a class="inline-flex items-center rounded border px-3 py-2 text-sm hover:bg-gray-50" href="{% url 'dashboard:customers_list' %}">Cancel</a>
+  </div>
+</form>
+
+<script>
+  (function() {
+    const typeEl = document.getElementById('id_customer_type');
+    const secInd = document.getElementById('section-individual');
+    const secCo = document.getElementById('section-company');
+    function toggleSections() {
+      const isIndividual = typeEl && typeEl.value === 'individual';
+      // Show/hide sections
+      if (secInd) {
+        secInd.style.display = isIndividual ? '' : 'none';
+        secInd.setAttribute('aria-hidden', isIndividual ? 'false' : 'true');
+        // Disable/enable inputs for validation clarity
+        secInd.querySelectorAll('input,select,textarea').forEach(el => {
+          el.disabled = !isIndividual;
+        });
+      }
+      if (secCo) {
+        secCo.style.display = isIndividual ? 'none' : '';
+        secCo.setAttribute('aria-hidden', isIndividual ? 'true' : 'false');
+        secCo.querySelectorAll('input,select,textarea').forEach(el => {
+          el.disabled = isIndividual;
+        });
+      }
+    }
+    if (typeEl) {
+      typeEl.addEventListener('change', toggleSections);
+      // Initialize on load
+      toggleSections();
+    }
+  })();
+</script>
+
+{% endblock %}

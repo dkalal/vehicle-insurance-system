@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="flex items-center justify-between mb-4">
+  <h1 class="text-xl font-semibold">Support Requests</h1>
+  <a href="{% url 'dashboard:support_create' %}" class="inline-flex items-center rounded bg-sky-600 px-3 py-2 text-white hover:bg-sky-700">New Request</a>
+</div>
+
+<div class="overflow-x-auto rounded border border-gray-200 bg-white">
+  <table class="min-w-full text-sm">
+    <caption class="sr-only">List of support requests</caption>
+    <thead class="bg-gray-50 text-left text-gray-600">
+      <tr>
+        <th class="px-3 py-2">Subject</th>
+        <th class="px-3 py-2">Status</th>
+        <th class="px-3 py-2">Priority</th>
+        <th class="px-3 py-2">Created</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100">
+      {% for t in tickets %}
+      <tr class="hover:bg-gray-50">
+        <td class="px-3 py-2 font-medium">{{ t.subject }}</td>
+        <td class="px-3 py-2">
+          {% if t.status == 'open' %}<span class="inline-flex rounded bg-sky-100 text-sky-800 px-2 py-1 text-xs">Open</span>{% endif %}
+          {% if t.status == 'in_progress' %}<span class="inline-flex rounded bg-yellow-100 text-yellow-800 px-2 py-1 text-xs">In Progress</span>{% endif %}
+          {% if t.status == 'closed' %}<span class="inline-flex rounded bg-gray-200 text-gray-800 px-2 py-1 text-xs">Closed</span>{% endif %}
+        </td>
+        <td class="px-3 py-2">
+          {% if t.priority == 'high' %}<span class="inline-flex rounded bg-red-100 text-red-800 px-2 py-1 text-xs">High</span>{% elif t.priority == 'low' %}<span class="inline-flex rounded bg-green-100 text-green-800 px-2 py-1 text-xs">Low</span>{% else %}<span class="inline-flex rounded bg-sky-100 text-sky-800 px-2 py-1 text-xs">Normal</span>{% endif %}
+        </td>
+        <td class="px-3 py-2">{{ t.created_at|date:"Y-m-d H:i" }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4" class="px-3 py-6 text-center text-gray-500">No support requests.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="mt-4 flex items-center gap-2 text-sm">
+  {% if page_obj.has_previous %}
+    <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?page=1">First</a>
+    <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?page={{ page_obj.previous_page_number }}">Prev</a>
+  {% else %}
+    <span class="rounded border px-2 py-1 opacity-50 cursor-not-allowed">First</span>
+    <span class="rounded border px-2 py-1 opacity-50 cursor-not-allowed">Prev</span>
+  {% endif %}
+  <span class="px-2 py-1">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+  {% if page_obj.has_next %}
+    <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?page={{ page_obj.next_page_number }}">Next</a>
+    <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?page={{ page_obj.paginator.num_pages }}">Last</a>
+  {% else %}
+    <span class="rounded border px-2 py-1 opacity-50 cursor-not-allowed">Next</span>
+    <span class="rounded border px-2 py-1 opacity-50 cursor-not-allowed">Last</span>
+  {% endif %}
+</div>
+{% endblock %}

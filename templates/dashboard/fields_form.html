@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-3xl">
+  <h1 class="text-xl font-semibold mb-4">{{ form.instance.pk|yesno:"Edit Field,New Field" }}</h1>
+
+  {% if form.non_field_errors %}
+    <div class="mb-4 rounded border-l-4 border-red-500 bg-red-50 p-3 text-red-800">{{ form.non_field_errors }}</div>
+  {% endif %}
+
+  <form method="post" novalidate class="bg-white rounded shadow">
+    {% csrf_token %}
+    <div class="p-4 space-y-4">
+      {{ form.as_p }}
+      {% if form.options %}
+        <p class="text-sm text-gray-500">Tip: Options accept JSON ["A","B"], comma-separated values, or one option per line.</p>
+      {% endif %}
+    </div>
+    <div class="border-t px-4 py-3 flex gap-2">
+      <a href="{% url 'dashboard:fields_list' %}" class="inline-flex items-center rounded border px-3 py-2 text-sm hover:bg-gray-50">Cancel</a>
+      <button type="submit" class="inline-flex items-center rounded bg-sky-600 px-4 py-2 text-white hover:bg-sky-700">Save</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

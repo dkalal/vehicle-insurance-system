@@ -1,0 +1,54 @@
+# Core Django Framework
+Django==5.0.1
+djangorestframework==3.14.0
+django-environ==0.11.2
+django-filter==23.5
+
+# Database (use psycopg3 with bundled binary libpq)
+psycopg[binary]==3.1.18
+
+# Caching and Task Queue
+redis==5.0.1
+celery==5.3.6
+django-redis==5.4.0
+
+# History and Audit Tracking
+django-simple-history==3.4.0
+django-auditlog==2.3.0
+
+# Security
+django-cors-headers==4.3.1
+django-csp==3.7
+
+# Reporting
+reportlab==4.0.9
+openpyxl==3.1.2
+
+# Monitoring and Performance
+psutil==5.9.8
+python-json-logger==2.0.7
+sentry-sdk[django]==1.40.6
+
+# API Documentation
+drf-spectacular==0.27.1
+
+# Development Tools
+django-debug-toolbar==4.2.0
+ipython==8.20.0
+
+# Production Server
+gunicorn==21.2.0
+whitenoise==6.6.0
+
+# Testing
+pytest==7.4.4
+pytest-django==4.8.0
+pytest-cov==4.1.0
+factory-boy==3.3.0
+
+# Code Quality
+black==23.12.1
+isort==5.13.2
+flake8==7.0.0
+mypy==1.8.0
+django-stubs==4.2.7

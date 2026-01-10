@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="flex items-center justify-between mb-4">
+  <h1 class="text-xl font-semibold">Registrations Report</h1>
+  <div class="flex gap-2">
+    <a class="inline-flex items-center rounded border px-3 py-2 text-sm hover:bg-gray-50" href="?period={{ period }}&export=csv">Export CSV</a>
+    <a class="inline-flex items-center rounded border px-3 py-2 text-sm hover:bg-gray-50" href="?period={{ period }}&export=xlsx">Export Excel</a>
+  </div>
+</div>
+
+<form method="get" class="grid grid-cols-12 gap-3 mb-4" role="search">
+  <div class="col-span-12 md:col-span-3">
+    <select name="period" class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+      <option value="daily" {% if period == 'daily' %}selected{% endif %}>Daily</option>
+      <option value="monthly" {% if period == 'monthly' %}selected{% endif %}>Monthly</option>
+    </select>
+  </div>
+  <div class="col-span-12 md:col-span-2">
+    <button class="w-full inline-flex items-center justify-center rounded border border-gray-300 px-3 py-2 text-sm hover:bg-gray-50" type="submit">Apply</button>
+  </div>
+</form>
+
+<div class="overflow-x-auto rounded border border-gray-200 bg-white">
+  <table class="min-w-full text-sm">
+    <thead class="bg-gray-50 text-left text-gray-600">
+      <tr>
+        <th class="px-3 py-2">Date</th>
+        <th class="px-3 py-2">Customers</th>
+        <th class="px-3 py-2">Vehicles</th>
+        <th class="px-3 py-2">Policies</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100">
+      {% for r in rows %}
+      <tr class="hover:bg-gray-50">
+        <td class="px-3 py-2">{{ r.date|date:"Y-m-d" }}</td>
+        <td class="px-3 py-2">{{ r.customers }}</td>
+        <td class="px-3 py-2">{{ r.vehicles }}</td>
+        <td class="px-3 py-2">{{ r.policies }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4" class="px-3 py-6 text-center text-gray-500">No data available.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
