@@ -1,0 +1,177 @@
+name: Vehicle Insurance System CI/CD
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  PYTHON_VERSION: '3.12'
+  NODE_VERSION: '18'
+
+jobs:
+  # Code Quality and Security Checks
+  quality-checks:
+    runs-on: ubuntu-latest
+    name: Code Quality & Security
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+    
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install bandit safety
+    
+    - name: Code formatting check (Black)
+      run: black --check --diff .
+    
+    - name: Import sorting check (isort)
+      run: isort --check-only --diff .
+    
+    - name: Linting (flake8)
+      run: flake8 .
+    
+    - name: Type checking (mypy)
+      run: mypy apps/ --ignore-missing-imports
+    
+    - name: Security check (Bandit)
+      run: bandit -r apps/ -f json -o bandit-report.json
+    
+    - name: Dependency vulnerability check (Safety)
+      run: safety check --json --output safety-report.json
+    
+    - name: Upload security reports
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: security-reports
+        path: |
+          bandit-report.json
+          safety-report.json
+
+  # Comprehensive Testing
+  test:
+    runs-on: ubuntu-latest
+    name: Test Suite
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_vehicle_insurance
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+    
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install coverage pytest-xdist
+    
+    - name: Set up environment
+      run: |
+        cp .env.example .env
+        echo "SECRET_KEY=test-secret-key-for-ci" >> .env
+        echo "DEBUG=True" >> .env
+        echo "DB_HOST=localhost" >> .env
+        echo "DB_NAME=test_vehicle_insurance" >> .env
+        echo "DB_USER=postgres" >> .env
+        echo "DB_PASSWORD=postgres" >> .env
+        echo "REDIS_URL=redis://localhost:6379/0" >> .env
+    
+    - name: Run migrations
+      run: python manage.py migrate --settings=config.settings.development
+    
+    - name: Run tests with coverage
+      run: |
+        coverage run --source='.' manage.py test --settings=config.settings.development --parallel
+        coverage xml
+    
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+
+  # Docker Build and Security Scan
+  docker-build:
+    runs-on: ubuntu-latest
+    name: Docker Build & Security Scan
+    needs: [quality-checks, test]
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Build Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: false
+        tags: vehicle-insurance:${{ github.sha }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+    
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: 'vehicle-insurance:${{ github.sha }}'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+    
+    - name: Upload Trivy scan results
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'

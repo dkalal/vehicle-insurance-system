@@ -53,3 +53,8 @@ if settings.DEBUG:
         urlpatterns = [
             path('__debug__/', include(debug_toolbar.urls)),
         ] + urlpatterns
+
+# Custom error handlers
+handler404 = 'apps.core.error_handlers.handler404'
+handler500 = 'apps.core.error_handlers.handler500'
+handler403 = 'apps.core.error_handlers.handler403'
