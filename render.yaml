@@ -1,0 +1,207 @@
+services:
+  - type: web
+    name: vehicle-insurance-web
+    env: python
+    plan: starter
+    buildCommand: |
+      pip install -r requirements.txt
+      python manage.py collectstatic --noinput
+    startCommand: |
+      python manage.py migrate && \
+      gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 4 --timeout 120 --max-requests 1000 --max-requests-jitter 100
+    autoDeploy: true
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: config.settings.production
+      - key: SECRET_KEY
+        sync: false
+      - key: ALLOWED_HOSTS
+        # Set to your Render URL(s), comma-separated. Example below will be updated automatically after first deploy.
+        value: vehicle-insurance-web.onrender.com
+      - key: CSRF_TRUSTED_ORIGINS
+        value: https://vehicle-insurance-web.onrender.com
+      - key: DB_HOST
+        fromDatabase:
+          name: vehicle-insurance-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: vehicle-insurance-db
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: vehicle-insurance-db
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: vehicle-insurance-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: vehicle-insurance-db
+          property: password
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: vehicle-insurance-redis
+          property: connectionString
+      - key: CELERY_BROKER_URL
+        fromService:
+          type: redis
+          name: vehicle-insurance-redis
+          property: connectionString
+      - key: CELERY_RESULT_BACKEND
+        fromService:
+          type: redis
+          name: vehicle-insurance-redis
+          property: connectionString
+      - key: CACHE_DEFAULT_URL
+        fromService:
+          type: redis
+          name: vehicle-insurance-redis
+          property: connectionString
+      - key: CACHE_SESSIONS_URL
+        fromService:
+          type: redis
+          name: vehicle-insurance-redis
+          property: connectionString
+      - key: CACHE_TENANT_URL
+        fromService:
+          type: redis
+          name: vehicle-insurance-redis
+          property: connectionString
+      - key: PYTHON_VERSION
+        value: 3.12.3
+      - key: DEBUG
+        value: "False"
+    healthCheckPath: /health
+
+  - type: worker
+    name: vehicle-insurance-celery
+    env: python
+    plan: starter
+    buildCommand: |
+      pip install -r requirements.txt
+    startCommand: |
+      celery -A config worker --loglevel=INFO --concurrency=2
+    autoDeploy: true
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: config.settings.production
+      - key: SECRET_KEY
+        sync: false
+      - key: DB_HOST
+        fromDatabase:
+          name: vehicle-insurance-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: vehicle-insurance-db
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: vehicle-insurance-db
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: vehicle-insurance-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: vehicle-insurance-db
+          property: password
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: vehicle-insurance-redis
+          property: connectionString
+      - key: CELERY_BROKER_URL
+        fromService:
+          type: redis
+          name: vehicle-insurance-redis
+          property: connectionString
+      - key: CELERY_RESULT_BACKEND
+        fromService:
+          type: redis
+          name: vehicle-insurance-redis
+          property: connectionString
+      - key: CACHE_DEFAULT_URL
+        fromService:
+          type: redis
+          name: vehicle-insurance-redis
+          property: connectionString
+      - key: CACHE_SESSIONS_URL
+        fromService:
+          type: redis
+          name: vehicle-insurance-redis
+          property: connectionString
+      - key: CACHE_TENANT_URL
+        fromService:
+          type: redis
+          name: vehicle-insurance-redis
+          property: connectionString
+      - key: PYTHON_VERSION
+        value: 3.12.3
+      - key: DEBUG
+        value: "False"
+
+  - type: cron
+    name: vehicle-insurance-celery-beat
+    schedule: "*/5 * * * *"
+    env: python
+    plan: starter
+    buildCommand: |
+      pip install -r requirements.txt
+    startCommand: |
+      celery -A config beat --loglevel=INFO
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: config.settings.production
+      - key: SECRET_KEY
+        sync: false
+      - key: DB_HOST
+        fromDatabase:
+          name: vehicle-insurance-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: vehicle-insurance-db
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: vehicle-insurance-db
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: vehicle-insurance-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: vehicle-insurance-db
+          property: password
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: vehicle-insurance-redis
+          property: connectionString
+      - key: CELERY_BROKER_URL
+        fromService:
+          type: redis
+          name: vehicle-insurance-redis
+          property: connectionString
+      - key: CELERY_RESULT_BACKEND
+        fromService:
+          type: redis
+          name: vehicle-insurance-redis
+          property: connectionString
+
+# Managed databases and redis
+databases:
+  - name: vehicle-insurance-db
+    plan: starter
+    databaseName: vehicle_insurance
+    user: vehicle_insurance_user
+
+redis:
+  - name: vehicle-insurance-redis
+    plan: starter

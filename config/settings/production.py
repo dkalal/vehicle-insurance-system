@@ -25,6 +25,9 @@ X_FRAME_OPTIONS = 'DENY'
 CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[])
 CORS_ALLOW_CREDENTIALS = True
 
+# Trust Render domain(s) for CSRF if provided
+CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', default=[])
+
 # Email configuration for production
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = env('EMAIL_HOST', default='smtp.gmail.com')
@@ -40,3 +43,37 @@ LOGGING['handlers']['file']['filename'] = '/var/log/vehicle_insurance/app.log'
 # Remove debug_toolbar from installed apps (if somehow included)
 INSTALLED_APPS = [app for app in INSTALLED_APPS if app != 'debug_toolbar']
 MIDDLEWARE = [mw for mw in MIDDLEWARE if 'debug_toolbar' not in mw]
+
+# Production cache configuration (override defaults to avoid localhost Redis)
+# Provide Redis URLs via environment variables:
+# - CACHE_DEFAULT_URL (fallback to REDIS_URL)
+# - CACHE_SESSIONS_URL (fallback to REDIS_URL)
+# - CACHE_TENANT_URL (fallback to REDIS_URL)
+_CACHE_DEFAULT_URL = env('CACHE_DEFAULT_URL', default=env('REDIS_URL', default='redis://localhost:6379/0'))
+_CACHE_SESSIONS_URL = env('CACHE_SESSIONS_URL', default=env('REDIS_URL', default='redis://localhost:6379/0'))
+_CACHE_TENANT_URL = env('CACHE_TENANT_URL', default=env('REDIS_URL', default='redis://localhost:6379/0'))
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'LOCATION': _CACHE_DEFAULT_URL,
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        },
+        'KEY_PREFIX': 'vehicle_insurance',
+        'TIMEOUT': 300,
+        'VERSION': 1,
+    },
+    'sessions': {
+        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'LOCATION': _CACHE_SESSIONS_URL,
+        'TIMEOUT': 28800,
+        'KEY_PREFIX': 'sessions',
+    },
+    'tenant_data': {
+        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'LOCATION': _CACHE_TENANT_URL,
+        'TIMEOUT': 3600,
+        'KEY_PREFIX': 'tenant',
+    },
+}
