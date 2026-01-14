@@ -56,7 +56,13 @@ CACHES = {
         'LOCATION': 'vehicle_insurance_dev_local_cache',
         'TIMEOUT': 300,
         'KEY_PREFIX': 'vehicle_insurance_dev',
-    }
+    },
+    'sessions': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'vehicle_insurance_dev_sessions',
+        'TIMEOUT': 60 * 60 * 8,  # 8 hours to match session age
+        'KEY_PREFIX': 'sessions',
+    },
 }
 
 # Email backend for development (console output)
