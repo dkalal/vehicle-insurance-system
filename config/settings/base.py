@@ -5,6 +5,7 @@ Contains configuration shared across all environments.
 
 from pathlib import Path
 import sys
+import os
 import environ
 from .security import *
 from .performance import *
@@ -111,7 +112,13 @@ if USE_SQLITE_FOR_TESTS and 'test' in sys.argv:
             'LOCATION': 'vehicle_insurance_test_local_cache',
             'TIMEOUT': 300,
             'KEY_PREFIX': 'vehicle_insurance_test',
-        }
+        },
+        'sessions': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'vehicle_insurance_test_sessions',
+            'TIMEOUT': 60 * 60 * 8,
+            'KEY_PREFIX': 'sessions',
+        },
     }
 
 # Custom User Model
@@ -246,6 +253,10 @@ LOGIN_RATE_LIMIT_BLOCK_SECONDS = 900    # 15 minutes block after threshold
 LOGIN_URL = 'accounts:login'
 LOGIN_REDIRECT_URL = 'dashboard:home'
 LOGOUT_REDIRECT_URL = 'accounts:login'
+
+# Ensure logs directory exists before configuring file handler
+LOG_DIR = BASE_DIR / 'logs'
+os.makedirs(LOG_DIR, exist_ok=True)
 
 # Logging Configuration
 LOGGING = {
