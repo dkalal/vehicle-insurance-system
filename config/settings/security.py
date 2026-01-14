@@ -32,7 +32,7 @@ CSRF_COOKIE_SECURE = False  # Set to True in production with HTTPS
 CSRF_COOKIE_HTTPONLY = True
 CSRF_COOKIE_SAMESITE = 'Lax'
 CSRF_USE_SESSIONS = True
-CSRF_FAILURE_VIEW = 'apps.accounts.views.csrf_failure'
+CSRF_FAILURE_VIEW = 'apps.core.error_handlers.csrf_failure'
 
 # Password Security
 AUTH_PASSWORD_VALIDATORS = [
