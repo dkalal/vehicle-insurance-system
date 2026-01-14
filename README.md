@@ -1,6 +1,72 @@
-# Vehicle Insurance Information System
+# 🚗 Vehicle Insurance Information System
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Django](https://img.shields.io/badge/Django-5.0-092E20.svg)](https://www.djangoproject.com/)
+[![Python](https://img.shields.io/badge/Python-3.12+-3776AB.svg)](https://www.python.org/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14+-336791.svg)](https://www.postgresql.org/)
+[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg)](https://www.docker.com/)
 
 A world-class, multi-tenant insurance information system built with Django, designed for real-world production use with enterprise-grade security, performance, and scalability.
+
+## � Key Features
+
+- **🏢 Multi-tenant architecture** with strict data isolation
+- **🔒 Enterprise security** following OWASP guidelines  
+- **⚡ High performance** with Redis caching and optimization
+- **🎨 Modern UI/UX** with Tailwind CSS and accessibility compliance
+- **🔌 Complete REST API** with auto-generated documentation
+- **📊 Comprehensive monitoring** and health checks
+- **🐳 Production-ready** Docker containerization
+- **🚀 CI/CD pipeline** with automated testing and deployment
+
+## 🚀 Quick Start
+
+### Prerequisites
+- Python 3.12+
+- PostgreSQL 14+
+- Redis 6+
+- Docker & Docker Compose (optional)
+
+### One-Click Deployment
+```bash
+git clone https://github.com/dkalal/vehicle-insurance-system.git
+cd vehicle-insurance-system
+chmod +x deploy.sh
+./deploy.sh deploy
+```
+
+### Manual Setup
+```bash
+# Clone repository
+git clone https://github.com/dkalal/vehicle-insurance-system.git
+cd vehicle-insurance-system
+
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Environment setup
+cp .env.example .env
+# Edit .env with your database and Redis settings
+
+# Database setup
+python manage.py migrate
+python manage.py createsuperuser
+
+# Run development server
+python manage.py runserver 0.0.0.0:8000
+```
+
+## 📚 Documentation
+
+- [📋 Deployment Guide](DEPLOYMENT.md) - Complete production setup
+- [🤝 Contributing](CONTRIBUTING.md) - Development guidelines  
+- [🔐 Security Policy](SECURITY.md) - Security procedures
+- [📖 API Documentation](http://localhost:8000/api/docs/) - Interactive API docs
+- [🏗️ Architecture Guide](Project%20Foundation%20and%20Models.md) - System architecture
 
 ## 🏗️ Architecture Overview
 
