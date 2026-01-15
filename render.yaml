@@ -4,6 +4,7 @@ services:
     env: python
     plan: starter
     buildCommand: |
+      pip install --upgrade pip setuptools wheel
       pip install -r requirements.txt
       python manage.py collectstatic --noinput
     startCommand: |
@@ -42,36 +43,34 @@ services:
           property: password
       - key: REDIS_URL
         fromService:
-          type: redis
+          type: keyValueStore
           name: vehicle-insurance-redis
           property: connectionString
       - key: CELERY_BROKER_URL
         fromService:
-          type: redis
+          type: keyValueStore
           name: vehicle-insurance-redis
           property: connectionString
       - key: CELERY_RESULT_BACKEND
         fromService:
-          type: redis
+          type: keyValueStore
           name: vehicle-insurance-redis
           property: connectionString
       - key: CACHE_DEFAULT_URL
         fromService:
-          type: redis
+          type: keyValueStore
           name: vehicle-insurance-redis
           property: connectionString
       - key: CACHE_SESSIONS_URL
         fromService:
-          type: redis
+          type: keyValueStore
           name: vehicle-insurance-redis
           property: connectionString
       - key: CACHE_TENANT_URL
         fromService:
-          type: redis
+          type: keyValueStore
           name: vehicle-insurance-redis
           property: connectionString
-      - key: PYTHON_VERSION
-        value: 3.12.3
       - key: DEBUG
         value: "False"
     healthCheckPath: /health
@@ -81,6 +80,7 @@ services:
     env: python
     plan: starter
     buildCommand: |
+      pip install --upgrade pip setuptools wheel
       pip install -r requirements.txt
     startCommand: |
       celery -A config worker --loglevel=INFO --concurrency=2
@@ -112,36 +112,34 @@ services:
           property: password
       - key: REDIS_URL
         fromService:
-          type: redis
+          type: keyValueStore
           name: vehicle-insurance-redis
           property: connectionString
       - key: CELERY_BROKER_URL
         fromService:
-          type: redis
+          type: keyValueStore
           name: vehicle-insurance-redis
           property: connectionString
       - key: CELERY_RESULT_BACKEND
         fromService:
-          type: redis
+          type: keyValueStore
           name: vehicle-insurance-redis
           property: connectionString
       - key: CACHE_DEFAULT_URL
         fromService:
-          type: redis
+          type: keyValueStore
           name: vehicle-insurance-redis
           property: connectionString
       - key: CACHE_SESSIONS_URL
         fromService:
-          type: redis
+          type: keyValueStore
           name: vehicle-insurance-redis
           property: connectionString
       - key: CACHE_TENANT_URL
         fromService:
-          type: redis
+          type: keyValueStore
           name: vehicle-insurance-redis
           property: connectionString
-      - key: PYTHON_VERSION
-        value: 3.12.3
       - key: DEBUG
         value: "False"
 
@@ -151,6 +149,7 @@ services:
     env: python
     plan: starter
     buildCommand: |
+      pip install --upgrade pip setuptools wheel
       pip install -r requirements.txt
     startCommand: |
       celery -A config beat --loglevel=INFO
@@ -181,17 +180,17 @@ services:
           property: password
       - key: REDIS_URL
         fromService:
-          type: redis
+          type: keyValueStore
           name: vehicle-insurance-redis
           property: connectionString
       - key: CELERY_BROKER_URL
         fromService:
-          type: redis
+          type: keyValueStore
           name: vehicle-insurance-redis
           property: connectionString
       - key: CELERY_RESULT_BACKEND
         fromService:
-          type: redis
+          type: keyValueStore
           name: vehicle-insurance-redis
           property: connectionString
 
@@ -202,6 +201,6 @@ databases:
     databaseName: vehicle_insurance
     user: vehicle_insurance_user
 
-redis:
+keyValueStores:
   - name: vehicle-insurance-redis
     plan: starter
