@@ -5,7 +5,8 @@ django-environ==0.11.2
 django-filter==23.5
 
 # Database (use psycopg3 with bundled binary libpq)
-psycopg[binary]==3.1.18
+# Render builders offer psycopg-binary from 3.2+, so use a compatible range
+psycopg[binary]>=3.2,<3.4
 
 # Caching and Task Queue
 redis==5.0.1
