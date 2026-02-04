@@ -103,7 +103,7 @@ class Policy(BaseModel):
         help_text="Additional notes"
     )
     
-    # Activation tracking
+    # Lifecycle tracking
     activated_at = models.DateTimeField(
         null=True,
         blank=True,
@@ -116,9 +116,41 @@ class Policy(BaseModel):
         help_text="When policy was cancelled"
     )
     
-    cancellation_reason = models.TextField(
+    cancelled_by = models.ForeignKey(
+        'accounts.User',
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='cancelled_policies',
+        help_text="User who cancelled the policy"
+    )
+    
+    CANCELLATION_REASON_CUSTOMER_REQUEST = 'customer_request'
+    CANCELLATION_REASON_NON_PAYMENT = 'non_payment'
+    CANCELLATION_REASON_VEHICLE_SOLD = 'vehicle_sold'
+    CANCELLATION_REASON_DUPLICATE = 'duplicate'
+    CANCELLATION_REASON_ERROR = 'data_error'
+    CANCELLATION_REASON_OTHER = 'other'
+    
+    CANCELLATION_REASON_CHOICES = [
+        (CANCELLATION_REASON_CUSTOMER_REQUEST, 'Customer Request'),
+        (CANCELLATION_REASON_NON_PAYMENT, 'Non-Payment'),
+        (CANCELLATION_REASON_VEHICLE_SOLD, 'Vehicle Sold'),
+        (CANCELLATION_REASON_DUPLICATE, 'Duplicate Entry'),
+        (CANCELLATION_REASON_ERROR, 'Data Error'),
+        (CANCELLATION_REASON_OTHER, 'Other'),
+    ]
+    
+    cancellation_reason = models.CharField(
+        max_length=50,
+        choices=CANCELLATION_REASON_CHOICES,
         blank=True,
         help_text="Reason for cancellation"
+    )
+    
+    cancellation_note = models.TextField(
+        blank=True,
+        help_text="Additional cancellation details"
     )
     
     # History Tracking
@@ -162,7 +194,10 @@ class Policy(BaseModel):
         """
         super().clean()
         
-        # Check if vehicle already has an active policy
+        # Check if vehicle already has an active policy overlapping this period
+        # Business rule: a vehicle cannot have more than one ACTIVE policy
+        # for the same coverage window. Non-overlapping future/ historical
+        # policies are allowed.
         if self.status == self.STATUS_ACTIVE and self.vehicle_id:
             from django.db.models import Q
             active_policies = Policy._base_manager.filter(
@@ -170,11 +205,13 @@ class Policy(BaseModel):
                 deleted_at__isnull=True,
                 vehicle=self.vehicle,
                 status=self.STATUS_ACTIVE,
+                start_date__lte=self.end_date,
+                end_date__gte=self.start_date,
             ).exclude(pk=self.pk)
-            
+
             if active_policies.exists():
                 raise ValidationError({
-                    'vehicle': 'This vehicle already has an active policy. '
+                    'vehicle': 'This vehicle already has an active policy in this coverage period. '
                                'Only one active policy per vehicle is allowed.'
                 })
     
@@ -236,34 +273,9 @@ class Policy(BaseModel):
         
         return True, "Can be activated"
     
-    def activate(self):
-        """
-        Activate the policy.
-        
-        Raises:
-            ValidationError: If policy cannot be activated.
-        """
-        can_activate, reason = self.can_activate()
-        if not can_activate:
-            raise ValidationError(reason)
-        
-        from django.utils import timezone
-        self.status = self.STATUS_ACTIVE
-        self.activated_at = timezone.now()
-        self.save(update_fields=['status', 'activated_at', 'updated_at'])
-    
-    def cancel(self, reason=''):
-        """
-        Cancel the policy.
-        
-        Args:
-            reason: Reason for cancellation.
-        """
-        from django.utils import timezone
-        self.status = self.STATUS_CANCELLED
-        self.cancelled_at = timezone.now()
-        self.cancellation_reason = reason
-        self.save(update_fields=['status', 'cancelled_at', 'cancellation_reason', 'updated_at'])
+    def is_immutable(self):
+        """Check if policy is immutable (cannot be edited)."""
+        return self.status == self.STATUS_ACTIVE
     
     def is_active(self):
         """Check if policy is currently active."""

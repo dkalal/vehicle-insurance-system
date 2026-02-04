@@ -106,6 +106,10 @@ if USE_SQLITE_FOR_TESTS and 'test' in sys.argv:
         'CONN_MAX_AGE': 0,
         'OPTIONS': {},
     }
+    # For the lightweight SQLite test environment, fall back to cookie-based
+    # CSRF tokens to avoid relying on session storage during tests. This keeps
+    # tests simple while production continues to use session-based CSRF.
+    CSRF_USE_SESSIONS = False
     CACHES = {
         'default': {
             'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',

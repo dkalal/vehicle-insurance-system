@@ -1,4 +1,6 @@
 from django.contrib import messages
+from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django.db import transaction, models
 from django.shortcuts import redirect, get_object_or_404
 from django.urls import reverse_lazy
@@ -15,10 +17,17 @@ from .forms import TenantForm, PlatformConfigForm
 from apps.core.models import SupportRequest
 from apps.tenants import services as tenant_services
 from .models import PlatformConfig
+from apps.accounts.services import password_reset_service
+from . import services as super_admin_services
 
 
 class SuperAdminHomeView(SuperAdminRequiredMixin, TemplateView):
     template_name = 'super_admin/home.html'
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["overview"] = super_admin_services.get_platform_overview()
+        return ctx
 
 
 class TenantListView(SuperAdminRequiredMixin, ListView):
@@ -40,6 +49,13 @@ class TenantListView(SuperAdminRequiredMixin, ListView):
         elif status == 'deleted':
             qs = qs.filter(deleted_at__isnull=False)
         return qs
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        params = self.request.GET.copy()
+        params.pop('page', None)
+        ctx['querystring'] = params.urlencode()
+        return ctx
 
 
 class TenantCreateView(SuperAdminRequiredMixin, CreateView):
@@ -149,6 +165,9 @@ class AuditLogListView(SuperAdminRequiredMixin, ListView):
                 'date_to': self.request.GET.get('date_to', ''),
             }
         })
+        params = self.request.GET.copy()
+        params.pop('page', None)
+        ctx['querystring'] = params.urlencode()
         return ctx
 
 
@@ -204,6 +223,9 @@ class SupportRequestListView(SuperAdminRequiredMixin, ListView):
             'priority': self.request.GET.get('priority', ''),
             'tenant': self.request.GET.get('tenant', ''),
         }
+        params = self.request.GET.copy()
+        params.pop('page', None)
+        ctx['querystring'] = params.urlencode()
         return ctx
 
 
@@ -220,3 +242,29 @@ class SupportRequestUpdateView(SuperAdminRequiredMixin, UpdateView):
     def form_valid(self, form):
         messages.success(self.request, 'Support request updated')
         return super().form_valid(form)
+
+
+class SuperAdminUserPasswordResetView(SuperAdminRequiredMixin, View):
+    """Allow Super Admin to force reset a tenant user's password across tenants."""
+
+    def post(self, request, user_pk):
+        User = get_user_model()
+        target = get_object_or_404(User, pk=user_pk)
+        reason = request.POST.get('reason', '')
+        try:
+            temp_password = password_reset_service.super_admin_force_reset_password(
+                actor=request.user,
+                target_user=target,
+                reason=reason,
+                ip_address=request.META.get('REMOTE_ADDR'),
+            )
+        except ValidationError as exc:
+            messages.error(request, '; '.join(exc.messages))
+        else:
+            display_name = target.get_full_name() or target.username
+            messages.success(
+                request,
+                f'Password reset for {display_name}. Temporary password: {temp_password}. '
+                'Ask the user to change it after login.'
+            )
+        return redirect(reverse_lazy('super_admin:home'))

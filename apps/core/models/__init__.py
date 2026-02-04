@@ -17,6 +17,8 @@ from .vehicle import Vehicle
 from .policy import Policy
 from .payment import Payment
 from .support_request import SupportRequest
+from .vehicle_record import VehicleRecord, LATRARecord, PermitType, VehiclePermit
+from .onboarding import TenantOnboardingState
 
 __all__ = [
     'BaseModel',
@@ -28,4 +30,9 @@ __all__ = [
     'Policy',
     'Payment',
     'SupportRequest',
+    'VehicleRecord',
+    'LATRARecord',
+    'PermitType',
+    'VehiclePermit',
+    'TenantOnboardingState',
 ]

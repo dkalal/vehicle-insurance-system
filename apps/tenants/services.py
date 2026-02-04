@@ -53,3 +53,44 @@ def deactivate_tenant(tenant: Tenant) -> Tenant:
 def soft_delete_tenant(tenant: Tenant) -> Tenant:
     tenant.soft_delete()
     return tenant
+
+
+@transaction.atomic
+def update_tenant_settings_for_admin(*,
+                                     tenant: Tenant,
+                                     name: str,
+                                     contact_email: str,
+                                     contact_phone: str = "",
+                                     operation_type: str | None = None,
+                                     region: str | None = None,
+                                     city: str | None = None,
+                                     expiry_reminder_days: int | None = None) -> Tenant:
+    """Update a tenant's organization settings from the tenant admin dashboard.
+
+    This intentionally exposes only a safe subset of fields for tenant admins
+    and leaves platform-level concerns (slug, domain, activation) to the
+    Super Admin flows.
+    """
+
+    tenant.name = (name or "").strip()
+    tenant.contact_email = (contact_email or "").strip()
+    tenant.contact_phone = (contact_phone or "").strip()
+
+    # Update structured settings while preserving any other keys
+    settings = dict(tenant.settings or {})
+    if operation_type is not None:
+        settings["operation_type"] = operation_type
+    if region is not None:
+        settings["default_region"] = region
+    if city is not None:
+        settings["default_city"] = city
+    if expiry_reminder_days is not None:
+        try:
+            settings["expiry_reminder_days"] = int(expiry_reminder_days)
+        except (TypeError, ValueError):
+            settings["expiry_reminder_days"] = None
+
+    tenant.settings = settings
+    tenant.full_clean()
+    tenant.save(update_fields=["name", "contact_email", "contact_phone", "settings", "updated_at"])
+    return tenant

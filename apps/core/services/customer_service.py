@@ -1,6 +1,8 @@
 from django.db import transaction
 from django.core.exceptions import ValidationError
 from apps.core.models.customer import Customer
+from apps.core.models.vehicle import Vehicle
+from apps.core.models.policy import Policy
 
 
 @transaction.atomic
@@ -35,6 +37,16 @@ def create_customer(*, created_by, customer_type, email, phone, **kwargs) -> Cus
         "created_by": created_by,
         "updated_by": created_by,
     }
+
+    # Enforce tenant-scoped deduplication on email+phone for all customer types
+    if Customer._base_manager.filter(
+        tenant=creator_tenant,
+        deleted_at__isnull=True,
+        customer_type=customer_type,
+        email=email.strip(),
+        phone=phone.strip(),
+    ).exists():
+        raise ValidationError({"__all__": "A customer with this email and phone already exists in your tenant."})
 
     if customer_type == Customer.CUSTOMER_TYPE_INDIVIDUAL:
         data.update({
@@ -144,6 +156,23 @@ def soft_delete_customer(*, deleted_by, customer: Customer) -> Customer:
         raise ValidationError({"customer": "Customer is required"})
     if getattr(deleted_by, 'tenant_id', None) != getattr(customer, 'tenant_id', None):
         raise ValidationError({"customer": "Customer must belong to your tenant"})
+    if Vehicle._base_manager.filter(
+        tenant=customer.tenant,
+        deleted_at__isnull=True,
+        owner=customer,
+    ).exists():
+        raise ValidationError({
+            "__all__": "Customer cannot be deleted while they own active vehicles. Transfer or remove vehicles first."
+        })
+    if Policy._base_manager.filter(
+        tenant=customer.tenant,
+        deleted_at__isnull=True,
+        vehicle__owner=customer,
+        status=Policy.STATUS_ACTIVE,
+    ).exists():
+        raise ValidationError({
+            "__all__": "Customer cannot be deleted while they have active policies."
+        })
     # Track who performed deletion
     customer.updated_by = deleted_by
     customer.save(update_fields=['updated_by'])

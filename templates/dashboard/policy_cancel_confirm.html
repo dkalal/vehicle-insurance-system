@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+
+{% block title %}Cancel Policy - {{ policy.policy_number }}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div class="bg-white shadow rounded-lg p-6">
+        <div class="mb-6">
+            <h2 class="text-2xl font-bold text-gray-900">Cancel Policy</h2>
+            <p class="mt-2 text-sm text-gray-600">Policy: <span class="font-semibold">{{ policy.policy_number }}</span></p>
+            <p class="text-sm text-gray-600">Vehicle: <span class="font-semibold">{{ policy.vehicle.registration_number }}</span></p>
+        </div>
+
+        <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                    </svg>
+                </div>
+                <div class="ml-3">
+                    <h3 class="text-sm font-medium text-yellow-800">Warning: This action cannot be undone</h3>
+                    <div class="mt-2 text-sm text-yellow-700">
+                        <ul class="list-disc pl-5 space-y-1">
+                            <li>The policy will be permanently cancelled</li>
+                            <li>Vehicle will lose insurance coverage</li>
+                            <li>Historical record will be preserved for audit</li>
+                            <li>Cancellation will be recorded with your name and timestamp</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+            
+            <div>
+                <label for="reason" class="block text-sm font-medium text-gray-700 mb-2">
+                    Cancellation Reason <span class="text-red-600">*</span>
+                </label>
+                <select name="reason" id="reason" required
+                        class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    <option value="">-- Select Reason --</option>
+                    {% for value, label in reasons %}
+                    <option value="{{ value }}">{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label for="note" class="block text-sm font-medium text-gray-700 mb-2">
+                    Additional Details (Optional)
+                </label>
+                <textarea name="note" id="note" rows="4"
+                          class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                          placeholder="Provide any additional context for this cancellation..."></textarea>
+                <p class="mt-1 text-sm text-gray-500">This note will be part of the permanent audit record</p>
+            </div>
+
+            <div class="flex items-center justify-end space-x-3 pt-4 border-t">
+                <a href="{% url 'dashboard:policies_detail' policy.pk %}"
+                   class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                    Keep Active
+                </a>
+                <button type="submit"
+                        class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                    Confirm Cancellation
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

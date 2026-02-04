@@ -87,10 +87,13 @@ SECURITY_MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
-    'apps.accounts.middleware.LoginRateLimitMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'apps.super_admin.middleware.MaintenanceModeMiddleware',
+    # Messages must be attached to the request before any middleware
+    # attempts to add messages (e.g. login rate limiting, force password change).
     'django.contrib.messages.middleware.MessageMiddleware',
+    'apps.accounts.middleware.LoginRateLimitMiddleware',
+    'apps.accounts.middleware.ForcePasswordChangeMiddleware',
+    'apps.super_admin.middleware.MaintenanceModeMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'apps.tenants.middleware.TenantMiddleware',
     'simple_history.middleware.HistoryRequestMiddleware',

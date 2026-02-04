@@ -82,6 +82,14 @@ class User(AbstractUser):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     last_login_at = models.DateTimeField(null=True, blank=True)
+
+    must_change_password = models.BooleanField(
+        default=False,
+        db_index=True,
+        help_text="If true, user must set a new password before accessing the dashboard",
+    )
+
+    password_last_reset_at = models.DateTimeField(null=True, blank=True)
     
     # History tracking
     history = HistoricalRecords()
@@ -184,23 +192,23 @@ class User(AbstractUser):
         if self.is_super_admin:
             # Super Admin has no tenant permissions
             return False
-        
+
         if not self.tenant or not self.tenant.is_active:
             return False
-        
+
         # Permission hierarchy: Admin > Manager > Agent
         if self.is_tenant_admin:
             return True  # Admins have all permissions
-        
+
         # Define manager permissions
         manager_permissions = [
             'view_customers', 'view_vehicles', 'view_policies', 'view_payments',
             'view_reports', 'manage_staff'
         ]
-        
+
         if self.is_tenant_manager and permission_name in manager_permissions:
             return True
-        
+
         # Agent permissions
         agent_permissions = [
             'view_customers', 'add_customers', 'change_customers',
@@ -208,8 +216,94 @@ class User(AbstractUser):
             'view_policies', 'add_policies',
             'view_payments', 'add_payments',
         ]
-        
+
         if self.is_tenant_agent and permission_name in agent_permissions:
             return True
-        
+
         return False
+
+    def get_allowed_vehicle_types(self):
+        if getattr(self, 'is_super_admin', False):
+            return set()
+        if getattr(self, 'tenant_id', None) is None:
+            return set()
+        if getattr(self, 'role', None) == self.ROLE_ADMIN:
+            from apps.core.models.vehicle import Vehicle
+            return {t for (t, _) in Vehicle.VEHICLE_TYPE_CHOICES}
+        types = set(
+            UserVehicleTypeAssignment.objects.filter(
+                tenant_id=self.tenant_id,
+                user_id=self.id,
+                deleted_at__isnull=True,
+            ).values_list('vehicle_type', flat=True)
+        )
+        if not types:
+            from apps.core.models.vehicle import Vehicle
+            return {t for (t, _) in Vehicle.VEHICLE_TYPE_CHOICES}
+        return types
+
+
+class UserVehicleTypeAssignment(models.Model):
+    """Restrict a tenant staff user's work scope to one or more vehicle types."""
+
+    tenant = models.ForeignKey(
+        'tenants.Tenant',
+        on_delete=models.PROTECT,
+        related_name='user_vehicle_type_assignments',
+        db_index=True,
+    )
+    user = models.ForeignKey(
+        'accounts.User',
+        on_delete=models.PROTECT,
+        related_name='vehicle_type_assignments',
+        db_index=True,
+    )
+    vehicle_type = models.CharField(max_length=20, db_index=True)
+
+    deleted_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    created_by = models.ForeignKey(
+        'accounts.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='user_vehicle_type_assignment_created_set',
+    )
+    updated_by = models.ForeignKey(
+        'accounts.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='user_vehicle_type_assignment_updated_set',
+    )
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['tenant', 'user', 'vehicle_type']),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=['tenant', 'user', 'vehicle_type'],
+                condition=models.Q(deleted_at__isnull=True),
+                name='unique_user_vehicle_type_assignment',
+            ),
+        ]
+
+    def clean(self):
+        super().clean()
+        if not self.tenant_id:
+            raise ValidationError({'tenant': 'Tenant is required'})
+        if not self.user_id:
+            raise ValidationError({'user': 'User is required'})
+        if self.user and getattr(self.user, 'tenant_id', None) != self.tenant_id:
+            raise ValidationError({'user': 'User must belong to the same tenant'})
+        from apps.core.models.vehicle import Vehicle
+        allowed_types = {t for (t, _) in Vehicle.VEHICLE_TYPE_CHOICES}
+        if self.vehicle_type not in allowed_types:
+            raise ValidationError({'vehicle_type': 'Invalid vehicle type'})
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)

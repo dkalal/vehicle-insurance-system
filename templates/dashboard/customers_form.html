@@ -3,6 +3,18 @@
 {% block content %}
 <h1 class="text-xl font-semibold mb-4">{% if form.instance.pk %}Edit Customer{% else %}New Customer{% endif %}</h1>
 
+{% if form.errors %}
+  <div class="mb-4 rounded border border-red-200 bg-red-50 p-3 text-red-800 text-sm" role="alert">
+    Please fix the errors below and try again.
+  </div>
+{% endif %}
+
+{% if form.non_field_errors %}
+  <div class="mb-4 rounded border-l-4 border-red-500 bg-red-50 p-3 text-red-800 text-sm">
+    {{ form.non_field_errors }}
+  </div>
+{% endif %}
+
 <form method="post" novalidate class="bg-white rounded shadow p-4">
   {% csrf_token %}
 
@@ -10,6 +22,7 @@
     <div class="col-span-12 md:col-span-4">
       <label class="block text-sm font-medium text-gray-700" for="id_customer_type">Customer Type</label>
       {{ form.customer_type }}
+      {{ form.customer_type.errors }}
     </div>
   </div>
 
@@ -17,18 +30,22 @@
     <div class="col-span-12 md:col-span-6">
       <label class="block text-sm font-medium text-gray-700" for="id_first_name">First name</label>
       {{ form.first_name }}
+      {{ form.first_name.errors }}
     </div>
     <div class="col-span-12 md:col-span-6">
       <label class="block text-sm font-medium text-gray-700" for="id_last_name">Last name</label>
       {{ form.last_name }}
+      {{ form.last_name.errors }}
     </div>
     <div class="col-span-12 md:col-span-6">
       <label class="block text-sm font-medium text-gray-700" for="id_id_number">ID Number</label>
       {{ form.id_number }}
+      {{ form.id_number.errors }}
     </div>
     <div class="col-span-12 md:col-span-6">
       <label class="block text-sm font-medium text-gray-700" for="id_date_of_birth">Date of Birth</label>
       {{ form.date_of_birth }}
+      {{ form.date_of_birth.errors }}
     </div>
   </div>
 
@@ -36,14 +53,17 @@
     <div class="col-span-12 md:col-span-8">
       <label class="block text-sm font-medium text-gray-700" for="id_company_name">Company name</label>
       {{ form.company_name }}
+      {{ form.company_name.errors }}
     </div>
     <div class="col-span-12 md:col-span-4">
       <label class="block text-sm font-medium text-gray-700" for="id_registration_number">Registration No.</label>
       {{ form.registration_number }}
+      {{ form.registration_number.errors }}
     </div>
     <div class="col-span-12 md:col-span-6">
       <label class="block text-sm font-medium text-gray-700" for="id_tax_id">Tax ID</label>
       {{ form.tax_id }}
+      {{ form.tax_id.errors }}
     </div>
   </div>
 
@@ -51,30 +71,37 @@
     <div class="col-span-12 md:col-span-6">
       <label class="block text-sm font-medium text-gray-700" for="id_email">Email</label>
       {{ form.email }}
+      {{ form.email.errors }}
     </div>
     <div class="col-span-12 md:col-span-6">
       <label class="block text-sm font-medium text-gray-700" for="id_phone">Phone</label>
       {{ form.phone }}
+      {{ form.phone.errors }}
     </div>
     <div class="col-span-12">
       <label class="block text-sm font-medium text-gray-700" for="id_address">Address</label>
       {{ form.address }}
+      {{ form.address.errors }}
     </div>
     <div class="col-span-12 md:col-span-4">
       <label class="block text-sm font-medium text-gray-700" for="id_city">City</label>
       {{ form.city }}
+      {{ form.city.errors }}
     </div>
     <div class="col-span-12 md:col-span-4">
       <label class="block text-sm font-medium text-gray-700" for="id_region">Region</label>
       {{ form.region }}
+      {{ form.region.errors }}
     </div>
     <div class="col-span-12 md:col-span-4">
       <label class="block text-sm font-medium text-gray-700" for="id_postal_code">Postal Code</label>
       {{ form.postal_code }}
+      {{ form.postal_code.errors }}
     </div>
     <div class="col-span-12">
       <label class="block text-sm font-medium text-gray-700" for="id_notes">Notes</label>
       {{ form.notes }}
+      {{ form.notes.errors }}
     </div>
   </div>
 
@@ -110,8 +137,11 @@
   </div>
   {% endif %}
 
-  <div class="mt-6 flex gap-2">
-    <button class="inline-flex items-center rounded bg-sky-600 px-4 py-2 text-white hover:bg-sky-700" type="submit">Save</button>
+  <div class="mt-6 flex flex-wrap gap-2">
+    <button name="save" value="1" class="inline-flex items-center rounded bg-sky-600 px-4 py-2 text-white hover:bg-sky-700" type="submit">Save</button>
+    {% if not form.instance.pk %}
+      <button name="save_add_vehicle" value="1" class="inline-flex items-center rounded bg-emerald-600 px-4 py-2 text-white hover:bg-emerald-700" type="submit">Save and add vehicle</button>
+    {% endif %}
     <a class="inline-flex items-center rounded border px-3 py-2 text-sm hover:bg-gray-50" href="{% url 'dashboard:customers_list' %}">Cancel</a>
   </div>
 </form>

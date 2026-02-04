@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="text-xl font-semibold mb-4">New LATRA Record for {{ vehicle.registration_number }}</h1>
+<form method="post" novalidate class="bg-white rounded shadow p-4">
+  {% csrf_token %}
+  {% if form.errors %}
+  <div class="mb-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+    Please correct the errors below.
+  </div>
+  {% endif %}
+  <div class="grid grid-cols-12 gap-4">
+    <div class="col-span-12 md:col-span-6">
+      <label class="block text-sm font-medium text-gray-700" for="id_latra_number">LATRA Number</label>
+      {{ form.latra_number }}
+      {% if form.latra_number.errors %}
+      <p class="mt-1 text-sm text-red-600">{{ form.latra_number.errors.0 }}</p>
+      {% endif %}
+    </div>
+    <div class="col-span-12 md:col-span-6">
+      <label class="block text-sm font-medium text-gray-700" for="id_license_type">License Type</label>
+      {{ form.license_type }}
+      {% if form.license_type.errors %}
+      <p class="mt-1 text-sm text-red-600">{{ form.license_type.errors.0 }}</p>
+      {% endif %}
+    </div>
+    <div class="col-span-12">
+      <label class="block text-sm font-medium text-gray-700" for="id_route">Route</label>
+      {{ form.route }}
+      {% if form.route.errors %}
+      <p class="mt-1 text-sm text-red-600">{{ form.route.errors.0 }}</p>
+      {% endif %}
+    </div>
+    <div class="col-span-12 md:col-span-3">
+      <label class="block text-sm font-medium text-gray-700" for="id_start_date">Start Date</label>
+      {{ form.start_date }}
+      {% if form.start_date.errors %}
+      <p class="mt-1 text-sm text-red-600">{{ form.start_date.errors.0 }}</p>
+      {% endif %}
+    </div>
+    <div class="col-span-12 md:col-span-3">
+      <label class="block text-sm font-medium text-gray-700" for="id_end_date">End Date</label>
+      {{ form.end_date }}
+      {% if form.end_date.errors %}
+      <p class="mt-1 text-sm text-red-600">{{ form.end_date.errors.0 }}</p>
+      {% endif %}
+    </div>
+  </div>
+  {% if form.non_field_errors %}
+  <div class="mt-4 text-sm text-red-600">
+    {{ form.non_field_errors }}
+  </div>
+  {% endif %}
+  <div class="mt-6 flex gap-2">
+    <button type="submit" class="inline-flex items-center rounded bg-sky-600 px-4 py-2 text-white hover:bg-sky-700">Save</button>
+    <a href="{% url 'dashboard:vehicles_detail' vehicle.pk %}?tab=latra" class="inline-flex items-center rounded border px-3 py-2 text-sm hover:bg-gray-50">Cancel</a>
+  </div>
+</form>
+{% endblock %}

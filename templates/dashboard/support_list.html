@@ -5,15 +5,40 @@
   <a href="{% url 'dashboard:support_create' %}" class="inline-flex items-center rounded bg-sky-600 px-3 py-2 text-white hover:bg-sky-700">New Request</a>
 </div>
 
+<form method="get" class="grid grid-cols-12 gap-3 mb-4" aria-label="Filter support requests">
+  <div class="col-span-12 md:col-span-5">
+    <input type="text" name="q" value="{{ request.GET.q }}" placeholder="Search by subject" class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+  </div>
+  <div class="col-span-12 md:col-span-3">
+    <select name="status" class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+      <option value="">Any status</option>
+      <option value="open" {% if request.GET.status == 'open' %}selected{% endif %}>Open</option>
+      <option value="in_progress" {% if request.GET.status == 'in_progress' %}selected{% endif %}>In Progress</option>
+      <option value="closed" {% if request.GET.status == 'closed' %}selected{% endif %}>Closed</option>
+    </select>
+  </div>
+  <div class="col-span-12 md:col-span-3">
+    <select name="priority" class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+      <option value="">Any priority</option>
+      <option value="high" {% if request.GET.priority == 'high' %}selected{% endif %}>High</option>
+      <option value="normal" {% if request.GET.priority == 'normal' %}selected{% endif %}>Normal</option>
+      <option value="low" {% if request.GET.priority == 'low' %}selected{% endif %}>Low</option>
+    </select>
+  </div>
+  <div class="col-span-12 md:col-span-1">
+    <button type="submit" class="w-full inline-flex items-center justify-center rounded border border-gray-300 px-3 py-2 text-sm hover:bg-gray-50">Filter</button>
+  </div>
+</form>
+
 <div class="overflow-x-auto rounded border border-gray-200 bg-white">
-  <table class="min-w-full text-sm">
+  <table class="min-w-full text-sm" aria-label="Support requests for this organization">
     <caption class="sr-only">List of support requests</caption>
     <thead class="bg-gray-50 text-left text-gray-600">
       <tr>
-        <th class="px-3 py-2">Subject</th>
-        <th class="px-3 py-2">Status</th>
-        <th class="px-3 py-2">Priority</th>
-        <th class="px-3 py-2">Created</th>
+        <th scope="col" class="px-3 py-2">Subject</th>
+        <th scope="col" class="px-3 py-2">Status</th>
+        <th scope="col" class="px-3 py-2">Priority</th>
+        <th scope="col" class="px-3 py-2">Created</th>
       </tr>
     </thead>
     <tbody class="divide-y divide-gray-100">
@@ -39,16 +64,16 @@
 
 <div class="mt-4 flex items-center gap-2 text-sm">
   {% if page_obj.has_previous %}
-    <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?page=1">First</a>
-    <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?page={{ page_obj.previous_page_number }}">Prev</a>
+    <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?page=1&status={{ request.GET.status }}&priority={{ request.GET.priority }}&q={{ request.GET.q }}">First</a>
+    <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?page={{ page_obj.previous_page_number }}&status={{ request.GET.status }}&priority={{ request.GET.priority }}&q={{ request.GET.q }}">Prev</a>
   {% else %}
     <span class="rounded border px-2 py-1 opacity-50 cursor-not-allowed">First</span>
     <span class="rounded border px-2 py-1 opacity-50 cursor-not-allowed">Prev</span>
   {% endif %}
   <span class="px-2 py-1">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
   {% if page_obj.has_next %}
-    <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?page={{ page_obj.next_page_number }}">Next</a>
-    <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?page={{ page_obj.paginator.num_pages }}">Last</a>
+    <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?page={{ page_obj.next_page_number }}&status={{ request.GET.status }}&priority={{ request.GET.priority }}&q={{ request.GET.q }}">Next</a>
+    <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?page={{ page_obj.paginator.num_pages }}&status={{ request.GET.status }}&priority={{ request.GET.priority }}&q={{ request.GET.q }}">Last</a>
   {% else %}
     <span class="rounded border px-2 py-1 opacity-50 cursor-not-allowed">Next</span>
     <span class="rounded border px-2 py-1 opacity-50 cursor-not-allowed">Last</span>

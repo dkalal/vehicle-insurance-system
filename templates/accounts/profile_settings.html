@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-2xl">
+  <h1 class="text-xl font-semibold mb-2">Profile settings</h1>
+  <p class="mb-4 text-sm text-gray-600">Update your personal details. Your role and organization are managed by your administrator.</p>
+
+  <div class="mb-4 inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-700">
+    <span class="font-medium mr-2">Role:</span>
+    <span class="mr-3">{{ request.user.get_role_display|default:request.user.role|title }}</span>
+    {% if current_tenant and not is_super_admin %}
+      <span class="w-1 h-1 rounded-full bg-gray-400 mx-2" aria-hidden="true"></span>
+      <span class="font-medium mr-1">Organization:</span>
+      <span>{{ current_tenant.name }}</span>
+    {% endif %}
+  </div>
+
+  <form method="post" novalidate class="bg-white rounded shadow p-4 mt-2">
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+      <div class="mb-4 text-sm text-red-600">
+        {{ form.non_field_errors }}
+      </div>
+    {% endif %}
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <label for="id_first_name" class="block text-sm font-medium text-gray-700">First name</label>
+        {{ form.first_name }}
+        {% if form.first_name.errors %}
+          <p class="mt-1 text-sm text-red-600">{{ form.first_name.errors.0 }}</p>
+        {% endif %}
+      </div>
+      <div>
+        <label for="id_last_name" class="block text-sm font-medium text-gray-700">Last name</label>
+        {{ form.last_name }}
+        {% if form.last_name.errors %}
+          <p class="mt-1 text-sm text-red-600">{{ form.last_name.errors.0 }}</p>
+        {% endif %}
+      </div>
+      <div>
+        <label for="id_email" class="block text-sm font-medium text-gray-700">Email</label>
+        {{ form.email }}
+        {% if form.email.errors %}
+          <p class="mt-1 text-sm text-red-600">{{ form.email.errors.0 }}</p>
+        {% endif %}
+      </div>
+      <div>
+        <label for="id_phone_number" class="block text-sm font-medium text-gray-700">Phone</label>
+        {{ form.phone_number }}
+        {% if form.phone_number.errors %}
+          <p class="mt-1 text-sm text-red-600">{{ form.phone_number.errors.0 }}</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="mt-6 flex gap-2">
+      <button type="submit" class="inline-flex items-center rounded bg-sky-600 px-4 py-2 text-white hover:bg-sky-700">Save changes</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -4,34 +4,84 @@
 <h1 class="text-xl font-semibold mb-4">{% if form.instance.pk %}Edit Policy{% else %}New Policy{% endif %}</h1>
 <form method="post" novalidate class="bg-white rounded shadow p-4">
   {% csrf_token %}
+  {% if form.non_field_errors %}
+    <div class="mb-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+      {{ form.non_field_errors }}
+    </div>
+  {% endif %}
+  {% if selected_vehicle %}
+    <div class="mb-4 rounded border border-gray-200 bg-gray-50 px-3 py-3 text-sm">
+      <div class="font-medium text-gray-800">Vehicle summary</div>
+      <div class="mt-1 text-gray-700">
+        {{ selected_vehicle.registration_number }} – {{ selected_vehicle.make }} {{ selected_vehicle.model }}
+        <span class="ml-1 text-gray-500">
+          {% if selected_vehicle.owner.customer_type == 'individual' %}
+            ({{ selected_vehicle.owner.first_name }} {{ selected_vehicle.owner.last_name }})
+          {% else %}
+            ({{ selected_vehicle.owner.company_name }})
+          {% endif %}
+        </span>
+      </div>
+      <div class="mt-2 text-xs text-gray-700">
+        {% if active_policy_for_vehicle %}
+          Current active policy:
+          {{ active_policy_for_vehicle.policy_number }}
+          ({{ active_policy_for_vehicle.start_date|date:"Y-m-d" }} → {{ active_policy_for_vehicle.end_date|date:"Y-m-d" }})
+        {% else %}
+          This vehicle has no active policy at the moment.
+        {% endif %}
+      </div>
+    </div>
+  {% endif %}
   <div class="grid grid-cols-12 gap-4">
     <div class="col-span-12 md:col-span-6">
       <label class="block text-sm font-medium text-gray-700" for="id_vehicle">Vehicle</label>
       {{ form.vehicle }}
+      {% if form.vehicle.errors %}
+        <p class="mt-1 text-xs text-red-600">{{ form.vehicle.errors|striptags }}</p>
+      {% endif %}
     </div>
     <div class="col-span-12 md:col-span-3">
       <label class="block text-sm font-medium text-gray-700" for="id_start_date">Start Date</label>
       {{ form.start_date }}
+      {% if form.start_date.errors %}
+        <p class="mt-1 text-xs text-red-600">{{ form.start_date.errors|striptags }}</p>
+      {% endif %}
     </div>
     <div class="col-span-12 md:col-span-3">
       <label class="block text-sm font-medium text-gray-700" for="id_end_date">End Date</label>
       {{ form.end_date }}
+      {% if form.end_date.errors %}
+        <p class="mt-1 text-xs text-red-600">{{ form.end_date.errors|striptags }}</p>
+      {% endif %}
     </div>
     <div class="col-span-12 md:col-span-4">
       <label class="block text-sm font-medium text-gray-700" for="id_premium_amount">Premium Amount</label>
       {{ form.premium_amount }}
+      {% if form.premium_amount.errors %}
+        <p class="mt-1 text-xs text-red-600">{{ form.premium_amount.errors|striptags }}</p>
+      {% endif %}
     </div>
     <div class="col-span-12 md:col-span-4">
       <label class="block text-sm font-medium text-gray-700" for="id_coverage_amount">Coverage Amount</label>
       {{ form.coverage_amount }}
+      {% if form.coverage_amount.errors %}
+        <p class="mt-1 text-xs text-red-600">{{ form.coverage_amount.errors|striptags }}</p>
+      {% endif %}
     </div>
     <div class="col-span-12 md:col-span-4">
       <label class="block text-sm font-medium text-gray-700" for="id_policy_type">Policy Type</label>
       {{ form.policy_type }}
+      {% if form.policy_type.errors %}
+        <p class="mt-1 text-xs text-red-600">{{ form.policy_type.errors|striptags }}</p>
+      {% endif %}
     </div>
     <div class="col-span-12">
       <label class="block text-sm font-medium text-gray-700" for="id_notes">Notes</label>
       {{ form.notes }}
+      {% if form.notes.errors %}
+        <p class="mt-1 text-xs text-red-600">{{ form.notes.errors|striptags }}</p>
+      {% endif %}
     </div>
   </div>
   {% if df_defs %}

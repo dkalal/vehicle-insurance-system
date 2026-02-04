@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-xl">
+  <div class="mb-4">
+    <h1 class="text-xl font-semibold">{% if form.instance.pk %}Edit Permit Type{% else %}New Permit Type{% endif %}</h1>
+    <p class="mt-1 text-sm text-gray-600">Define a permit type used for vehicle compliance in your tenant. These settings control which permits can be active together on the same vehicle.</p>
+  </div>
+
+  {% if form.non_field_errors %}
+    <div class="mb-4 rounded border-l-4 border-red-500 bg-red-50 p-3 text-red-800 text-sm">
+      {{ form.non_field_errors }}
+    </div>
+  {% endif %}
+
+  <form method="post" novalidate class="bg-white rounded shadow p-4">
+  {% csrf_token %}
+  <div class="grid grid-cols-1 gap-4">
+    <div>
+      <label class="block text-sm font-medium text-gray-700" for="id_name">Name</label>
+      {{ form.name }}
+      {{ form.name.errors }}
+    </div>
+    <div class="flex items-center gap-2">
+      {{ form.is_active }}
+      <label class="text-sm text-gray-700" for="id_is_active">Active</label>
+      {{ form.is_active.errors }}
+    </div>
+    <div>
+      <label class="block text-sm font-medium text-gray-700" for="id_conflicts_with">Conflicts With</label>
+      {{ form.conflicts_with }}
+      {{ form.conflicts_with.errors }}
+      <p class="mt-1 text-xs text-gray-500">Select permit types that cannot be active at the same time on the same vehicle. If two types conflict, the system will block overlapping active permits for that vehicle.</p>
+    </div>
+  </div>
+  <div class="mt-6 flex gap-2">
+    <button type="submit" class="inline-flex items-center rounded bg-sky-600 px-4 py-2 text-white hover:bg-sky-700">Save</button>
+    <a href="{% url 'dashboard:permit_types_list' %}" class="inline-flex items-center rounded border px-3 py-2 text-sm hover:bg-gray-50">Cancel</a>
+  </div>
+</form>
+</div>
+{% endblock %}

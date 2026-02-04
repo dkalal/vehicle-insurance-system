@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+  <div>
+    <h1 class="text-xl font-semibold">Permit Types</h1>
+    <p class="text-sm text-gray-600">Manage permit types available for vehicle permits in your tenant.</p>
+  </div>
+  {% if request.user.role == 'admin' %}
+  <div>
+    <a href="{% url 'dashboard:permit_types_create' %}" class="inline-flex items-center rounded bg-sky-600 px-4 py-2 text-white hover:bg-sky-700 text-sm">New Permit Type</a>
+  </div>
+  {% endif %}
+</div>
+
+<div class="overflow-x-auto rounded border border-gray-200 bg-white">
+  <table class="min-w-full text-sm" aria-label="Permit types for this organization">
+    <thead class="bg-gray-50 text-left text-gray-600">
+      <tr>
+        <th scope="col" class="px-3 py-2">Name</th>
+        <th scope="col" class="px-3 py-2">Active</th>
+        <th scope="col" class="px-3 py-2">Conflicts With</th>
+        <th scope="col" class="px-3 py-2 text-right">Actions</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100">
+      {% for pt in permit_types %}
+      <tr class="hover:bg-gray-50">
+        <td class="px-3 py-2">{{ pt.name }}</td>
+        <td class="px-3 py-2">
+          {% if pt.is_active %}
+            <span class="inline-flex rounded bg-green-100 text-green-800 px-2 py-1 text-xs">Active</span>
+          {% else %}
+            <span class="inline-flex rounded bg-gray-200 text-gray-700 px-2 py-1 text-xs">Inactive</span>
+          {% endif %}
+        </td>
+        <td class="px-3 py-2 text-xs text-gray-600">
+          {% with pts=pt.conflicts_with.all %}
+            {% if pts %}
+              {% for c in pts %}
+                {{ c.name }}{% if not forloop.last %}, {% endif %}
+              {% endfor %}
+            {% else %}
+              None
+            {% endif %}
+          {% endwith %}
+        </td>
+        <td class="px-3 py-2 text-right">
+          {% if request.user.role == 'admin' %}
+          <a href="{% url 'dashboard:permit_types_update' pt.pk %}" class="inline-flex items-center rounded border border-sky-600 text-sky-700 hover:bg-sky-50 px-2 py-1 text-xs">Edit</a>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="4" class="px-3 py-6 text-center text-gray-500">No permit types defined yet.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

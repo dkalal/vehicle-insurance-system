@@ -1,0 +1,269 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="flex items-center justify-between mb-4">
+  <div>
+    <h1 class="text-xl font-semibold">Vehicle {{ vehicle.registration_number }}</h1>
+    {% if compliance_status %}
+      <div class="mt-1">
+        {% if compliance_status.status == 'compliant' %}
+          <span class="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-800">
+            <svg class="-ml-0.5 mr-1.5 h-2 w-2 text-emerald-400" fill="currentColor" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3" /></svg>
+            Fully Compliant
+          </span>
+        {% elif compliance_status.status == 'at_risk' %}
+          <span class="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800">
+            <svg class="-ml-0.5 mr-1.5 h-2 w-2 text-amber-400" fill="currentColor" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3" /></svg>
+            At Risk
+          </span>
+        {% else %}
+          <span class="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800">
+            <svg class="-ml-0.5 mr-1.5 h-2 w-2 text-red-400" fill="currentColor" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3" /></svg>
+            Non-Compliant
+          </span>
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
+  <div class="flex gap-2">
+    <a href="{% url 'dashboard:vehicles_update' vehicle.pk %}" class="inline-flex items-center rounded border border-sky-600 text-sky-700 hover:bg-sky-50 px-3 py-2">Edit</a>
+    <a href="{% url 'dashboard:vehicles_list' %}" class="inline-flex items-center rounded border px-3 py-2 text-sm hover:bg-gray-50">Back</a>
+  </div>
+</div>
+
+{% if compliance_status and compliance_status.issues %}
+  <div class="mb-4 rounded-lg border border-red-200 bg-red-50 p-4">
+    <h3 class="text-sm font-semibold text-red-900 mb-2">Compliance Issues</h3>
+    <ul class="list-disc list-inside text-sm text-red-800 space-y-1">
+      {% for issue in compliance_status.issues %}
+        <li>{{ issue }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+{% endif %}
+
+{% if compliance_status and compliance_status.expiring_soon %}
+  <div class="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-4">
+    <h3 class="text-sm font-semibold text-amber-900 mb-2">Expiring Soon</h3>
+    <ul class="list-disc list-inside text-sm text-amber-800 space-y-1">
+      {% for item in compliance_status.expiring_soon %}
+        <li>{{ item }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+{% endif %}
+
+<div class="mb-4 bg-white rounded shadow p-4">
+  <div class="grid grid-cols-12 gap-y-2 text-sm">
+    <div class="col-span-4 text-gray-600">Owner</div>
+    <div class="col-span-8">
+      {% if vehicle.owner.customer_type == 'individual' %}
+        {{ vehicle.owner.first_name }} {{ vehicle.owner.last_name }}
+      {% else %}
+        {{ vehicle.owner.company_name }}
+      {% endif %}
+    </div>
+    <div class="col-span-4 text-gray-600">Make / Model</div>
+    <div class="col-span-8">{{ vehicle.make }} {{ vehicle.model }}</div>
+    <div class="col-span-4 text-gray-600">Year</div>
+    <div class="col-span-8">{{ vehicle.year }}</div>
+    <div class="col-span-4 text-gray-600">Type</div>
+    <div class="col-span-8">{{ vehicle.get_vehicle_type_display }}</div>
+    <div class="col-span-4 text-gray-600">Chassis</div>
+    <div class="col-span-8">{{ vehicle.chassis_number }}</div>
+    <div class="col-span-4 text-gray-600">Engine</div>
+    <div class="col-span-8">{{ vehicle.engine_number }}</div>
+  </div>
+</div>
+
+<div class="border-b border-gray-200 mb-4">
+  <nav class="-mb-px flex space-x-6 text-sm" aria-label="Vehicle compliance tabs">
+    <a href="?tab=insurance" class="whitespace-nowrap border-b-2 px-1 pb-2 {% if active_tab == 'insurance' %}border-sky-600 text-sky-600{% else %}border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300{% endif %}">Insurance</a>
+    <a href="?tab=latra" class="whitespace-nowrap border-b-2 px-1 pb-2 {% if active_tab == 'latra' %}border-sky-600 text-sky-600{% else %}border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300{% endif %}">LATRA</a>
+    <a href="?tab=permits" class="whitespace-nowrap border-b-2 px-1 pb-2 {% if active_tab == 'permits' %}border-sky-600 text-sky-600{% else %}border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300{% endif %}">Permits</a>
+  </nav>
+</div>
+
+{% if active_tab == 'insurance' %}
+  <div class="space-y-4">
+    <div class="bg-white rounded shadow p-4">
+      <h2 class="text-sm font-semibold mb-3">Active Insurance Coverage</h2>
+      {% if active_insurance %}
+        <div class="grid grid-cols-12 gap-y-2 text-sm">
+          <div class="col-span-4 text-gray-600">Policy #</div>
+          <div class="col-span-8">
+            <a href="{% url 'dashboard:policies_detail' active_insurance.pk %}" class="text-sky-700 hover:underline">{{ active_insurance.policy_number }}</a>
+          </div>
+          <div class="col-span-4 text-gray-600">Coverage Period</div>
+          <div class="col-span-8">{{ active_insurance.start_date|date:"Y-m-d" }} → {{ active_insurance.end_date|date:"Y-m-d" }}</div>
+          <div class="col-span-4 text-gray-600">Premium</div>
+          <div class="col-span-8">{{ active_insurance.premium_amount }}</div>
+          <div class="col-span-4 text-gray-600">Status</div>
+          <div class="col-span-8">
+            {% if active_insurance.status == 'active' and active_insurance.end_date <= today %}
+              <span class="inline-flex rounded bg-gray-800 text-white px-2 py-0.5 text-xs">Expired</span>
+            {% elif active_insurance.status == 'active' %}
+              <span class="inline-flex rounded bg-green-100 text-green-800 px-2 py-0.5 text-xs">Active</span>
+            {% elif active_insurance.status == 'pending_payment' %}
+              <span class="inline-flex rounded bg-yellow-100 text-yellow-800 px-2 py-0.5 text-xs">Pending payment</span>
+            {% elif active_insurance.status == 'draft' %}
+              <span class="inline-flex rounded bg-gray-200 text-gray-800 px-2 py-0.5 text-xs">Draft</span>
+            {% elif active_insurance.status == 'cancelled' %}
+              <span class="inline-flex rounded bg-red-100 text-red-800 px-2 py-0.5 text-xs">Cancelled</span>
+            {% else %}
+              {{ active_insurance.status }}
+            {% endif %}
+          </div>
+        </div>
+      {% else %}
+        <div class="flex items-center justify-between">
+          <p class="text-sm text-red-600 font-medium">No active insurance coverage. Vehicle is not legal to operate.</p>
+          <a href="{% url 'dashboard:policies_create' %}?vehicle={{ vehicle.pk }}" class="inline-flex items-center rounded bg-sky-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-sky-700">Register Insurance</a>
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="bg-white rounded shadow p-4">
+      <h2 class="text-sm font-semibold mb-3">Insurance History</h2>
+      <div class="overflow-x-auto rounded border border-gray-200">
+        <table class="min-w-full text-sm">
+          <thead class="bg-gray-50 text-left text-gray-600">
+            <tr>
+              <th class="px-3 py-2">Policy #</th>
+              <th class="px-3 py-2">Coverage Period</th>
+              <th class="px-3 py-2">Premium</th>
+              <th class="px-3 py-2">Status</th>
+              <th class="px-3 py-2 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            {% for p in policies %}
+            <tr class="hover:bg-gray-50">
+              <td class="px-3 py-2">{{ p.policy_number }}</td>
+              <td class="px-3 py-2">{{ p.start_date|date:"Y-m-d" }} → {{ p.end_date|date:"Y-m-d" }}</td>
+              <td class="px-3 py-2">{{ p.premium_amount }}</td>
+              <td class="px-3 py-2">
+                {% if p.status == 'active' and p.end_date <= today %}
+                  <span class="inline-flex rounded bg-gray-800 text-white px-2 py-0.5 text-xs">Expired</span>
+                {% elif p.status == 'active' %}
+                  <span class="inline-flex rounded bg-green-100 text-green-800 px-2 py-0.5 text-xs">Active</span>
+                {% elif p.status == 'pending_payment' %}
+                  <span class="inline-flex rounded bg-yellow-100 text-yellow-800 px-2 py-0.5 text-xs">Pending payment</span>
+                {% elif p.status == 'draft' %}
+                  <span class="inline-flex rounded bg-gray-200 text-gray-800 px-2 py-0.5 text-xs">Draft</span>
+                {% elif p.status == 'expired' %}
+                  <span class="inline-flex rounded bg-gray-800 text-white px-2 py-0.5 text-xs">Expired</span>
+                {% elif p.status == 'cancelled' %}
+                  <span class="inline-flex rounded bg-red-100 text-red-800 px-2 py-0.5 text-xs">Cancelled</span>
+                {% else %}
+                  {{ p.status }}
+                {% endif %}
+              </td>
+              <td class="px-3 py-2 text-right">
+                <a href="{% url 'dashboard:policies_detail' p.pk %}" class="inline-flex items-center rounded border border-gray-300 px-2 py-1 hover:bg-gray-50">View</a>
+                {% if p.status == 'active' %}
+                <a href="{% url 'dashboard:policies_renew' p.pk %}" class="inline-flex items-center rounded border border-emerald-600 text-emerald-700 hover:bg-emerald-50 px-2 py-1 ml-1">Renew</a>
+                {% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="px-3 py-4 text-center text-gray-500">No insurance records for this vehicle.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+{% elif active_tab == 'latra' %}
+  <div class="bg-white rounded shadow p-4">
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="text-sm font-semibold">LATRA Registration Records</h2>
+      <a href="{% url 'dashboard:vehicles_latra_create' vehicle.pk %}" class="inline-flex items-center rounded bg-sky-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-sky-700">Record LATRA License</a>
+    </div>
+    <div class="overflow-x-auto rounded border border-gray-200">
+      <table class="min-w-full text-sm">
+        <thead class="bg-gray-50 text-left text-gray-600">
+          <tr>
+            <th class="px-3 py-2">LATRA No.</th>
+            <th class="px-3 py-2">License Type</th>
+            <th class="px-3 py-2">Route</th>
+            <th class="px-3 py-2">Validity Period</th>
+            <th class="px-3 py-2">Status</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+          {% for r in latra_records %}
+          <tr class="hover:bg-gray-50">
+            <td class="px-3 py-2">{{ r.latra_number }}</td>
+            <td class="px-3 py-2">{{ r.license_type }}</td>
+            <td class="px-3 py-2">{{ r.route }}</td>
+            <td class="px-3 py-2">{{ r.start_date|date:"Y-m-d" }}{% if r.end_date %} → {{ r.end_date|date:"Y-m-d" }}{% endif %}</td>
+            <td class="px-3 py-2">
+              {% if r.status == 'active' and r.end_date and r.end_date <= today %}
+                <span class="inline-flex rounded bg-gray-800 text-white px-2 py-0.5 text-xs">Expired</span>
+              {% elif r.status == 'active' %}
+                <span class="inline-flex rounded bg-green-100 text-green-800 px-2 py-0.5 text-xs">Active</span>
+              {% elif r.status == 'draft' %}
+                <span class="inline-flex rounded bg-gray-200 text-gray-800 px-2 py-0.5 text-xs">Draft</span>
+              {% elif r.status == 'expired' %}
+                <span class="inline-flex rounded bg-gray-800 text-white px-2 py-0.5 text-xs">Expired</span>
+              {% elif r.status == 'cancelled' %}
+                <span class="inline-flex rounded bg-red-100 text-red-800 px-2 py-0.5 text-xs">Cancelled</span>
+              {% else %}
+                {{ r.status }}
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="px-3 py-4 text-center text-gray-500">No LATRA records for this vehicle.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% elif active_tab == 'permits' %}
+  <div class="bg-white rounded shadow p-4">
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="text-sm font-semibold">Regulatory Permits</h2>
+      <a href="{% url 'dashboard:vehicles_permit_create' vehicle.pk %}" class="inline-flex items-center rounded bg-sky-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-sky-700">Record Permit</a>
+    </div>
+    <div class="overflow-x-auto rounded border border-gray-200">
+      <table class="min-w-full text-sm">
+        <thead class="bg-gray-50 text-left text-gray-600">
+          <tr>
+            <th class="px-3 py-2">Permit Type</th>
+            <th class="px-3 py-2">Reference</th>
+            <th class="px-3 py-2">Validity Period</th>
+            <th class="px-3 py-2">Status</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+          {% for p in permits %}
+          <tr class="hover:bg-gray-50">
+            <td class="px-3 py-2">{{ p.permit_type.name }}</td>
+            <td class="px-3 py-2">{{ p.reference_number }}</td>
+            <td class="px-3 py-2">{{ p.start_date|date:"Y-m-d" }}{% if p.end_date %} → {{ p.end_date|date:"Y-m-d" }}{% endif %}</td>
+            <td class="px-3 py-2">
+              {% if p.status == 'active' and p.end_date and p.end_date <= today %}
+                <span class="inline-flex rounded bg-gray-800 text-white px-2 py-0.5 text-xs">Expired</span>
+              {% elif p.status == 'active' %}
+                <span class="inline-flex rounded bg-green-100 text-green-800 px-2 py-0.5 text-xs">Active</span>
+              {% elif p.status == 'draft' %}
+                <span class="inline-flex rounded bg-gray-200 text-gray-800 px-2 py-0.5 text-xs">Draft</span>
+              {% elif p.status == 'expired' %}
+                <span class="inline-flex rounded bg-gray-800 text-white px-2 py-0.5 text-xs">Expired</span>
+              {% elif p.status == 'cancelled' %}
+                <span class="inline-flex rounded bg-red-100 text-red-800 px-2 py-0.5 text-xs">Cancelled</span>
+              {% else %}
+                {{ p.status }}
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" class="px-3 py-4 text-center text-gray-500">No permits for this vehicle.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endif %}
+{% endblock %}

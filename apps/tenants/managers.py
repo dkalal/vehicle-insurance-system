@@ -9,6 +9,8 @@ from django.db.models import Q, Prefetch
 from typing import Optional, Any, Dict
 import logging
 
+from apps.tenants.context import get_current_tenant
+
 logger = logging.getLogger(__name__)
 
 
@@ -158,6 +160,18 @@ class CustomerManager(TenantAwareSoftDeleteManager):
     Specialized manager for Customer model.
     """
     
+    def get_queryset(self):
+        """Return queryset scoped to the current tenant and excluding soft-deleted records.
+
+        When no tenant is set in the context, this returns an empty queryset to
+        prevent accidental cross-tenant access via Customer.objects.
+        """
+        qs = super().get_queryset()
+        tenant = get_current_tenant()
+        if tenant is None:
+            return qs.none()
+        return qs.filter(tenant=tenant)
+
     def with_policies(self):
         """Get customers with their policies prefetched."""
         return (self.get_queryset()
@@ -175,7 +189,7 @@ class CustomerManager(TenantAwareSoftDeleteManager):
             Q(first_name__icontains=query) |
             Q(last_name__icontains=query) |
             Q(email__icontains=query) |
-            Q(phone_number__icontains=query)
+            Q(phone__icontains=query)
         )
 
 

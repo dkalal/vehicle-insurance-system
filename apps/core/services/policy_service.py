@@ -4,6 +4,7 @@ from django.utils import timezone
 from decimal import Decimal
 from apps.core.models.policy import Policy
 from apps.core.models.vehicle import Vehicle
+from . import lifecycle_service
 
 
 @transaction.atomic
@@ -42,6 +43,37 @@ def create_policy(*, created_by, vehicle: Vehicle, start_date, end_date,
 
     policy.full_clean()
     policy.save()
+    return policy
+
+
+@transaction.atomic
+def activate_policy(*, policy_id, actor):
+    """Activate a policy using unified lifecycle service."""
+    return lifecycle_service.activate_entity(policy_id, actor, Policy)
+
+
+@transaction.atomic
+def cancel_policy(*, policy_id, actor, reason, note=""):
+    """Cancel a policy using unified lifecycle service."""
+    policy = lifecycle_service.cancel_entity(policy_id, actor, reason, note, Policy)
+    
+    # Send notification via event API (backwards compatible)
+    try:
+        from apps.notifications.services import NotificationService
+        NotificationService.handle_event(
+            event_type='compliance_record_cancelled',
+            tenant=policy.tenant,
+            actor=actor,
+            context={
+                'entity': policy,
+                'reason': reason,
+                'note': note,
+            },
+        )
+    except Exception:
+        # Do not fail cancellation if notifications fail
+        pass
+    
     return policy
 
 

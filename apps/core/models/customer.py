@@ -9,6 +9,7 @@ from django.core.validators import RegexValidator
 from simple_history.models import HistoricalRecords
 from auditlog.registry import auditlog
 from .base import BaseModel
+from apps.tenants.managers import CustomerManager, TenantAwareSoftDeleteManager
 
 
 class Customer(BaseModel):
@@ -118,6 +119,13 @@ class Customer(BaseModel):
         help_text="Additional notes about the customer"
     )
     
+    # Managers
+    # Default manager is tenant-scoped via CustomerManager, while
+    # ``all_objects`` exposes the unscoped soft-delete manager for
+    # internal/service-layer use where explicit tenant filters are applied.
+    objects = CustomerManager()
+    all_objects = TenantAwareSoftDeleteManager()
+    
     # History Tracking
     history = HistoricalRecords()
     
@@ -125,6 +133,7 @@ class Customer(BaseModel):
         verbose_name = 'Customer'
         verbose_name_plural = 'Customers'
         ordering = ['-created_at']
+        base_manager_name = 'all_objects'
         indexes = [
             models.Index(fields=['tenant', 'customer_type']),
             models.Index(fields=['tenant', 'email']),

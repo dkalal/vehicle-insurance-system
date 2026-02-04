@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="text-xl font-semibold mb-4">New Permit for {{ vehicle.registration_number }}</h1>
+<form method="post" novalidate class="bg-white rounded shadow p-4" enctype="multipart/form-data">
+  {% csrf_token %}
+  {% if form.non_field_errors %}
+    <div class="mb-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+      {{ form.non_field_errors }}
+    </div>
+  {% endif %}
+  <div class="grid grid-cols-12 gap-4">
+    <div class="col-span-12 md:col-span-6">
+      <label class="block text-sm font-medium text-gray-700" for="id_permit_type">Permit Type</label>
+      {{ form.permit_type }}
+      {% if form.permit_type.errors %}
+        <p class="mt-1 text-sm text-red-600">{{ form.permit_type.errors.0 }}</p>
+      {% endif %}
+    </div>
+    <div class="col-span-12 md:col-span-6">
+      <label class="block text-sm font-medium text-gray-700" for="id_reference_number">Reference Number</label>
+      {{ form.reference_number }}
+      {% if form.reference_number.errors %}
+        <p class="mt-1 text-sm text-red-600">{{ form.reference_number.errors.0 }}</p>
+      {% endif %}
+    </div>
+    <div class="col-span-12 md:col-span-3">
+      <label class="block text-sm font-medium text-gray-700" for="id_start_date">Start Date</label>
+      {{ form.start_date }}
+      {% if form.start_date.errors %}
+        <p class="mt-1 text-sm text-red-600">{{ form.start_date.errors.0 }}</p>
+      {% endif %}
+    </div>
+    <div class="col-span-12 md:col-span-3">
+      <label class="block text-sm font-medium text-gray-700" for="id_end_date">End Date</label>
+      {{ form.end_date }}
+      {% if form.end_date.errors %}
+        <p class="mt-1 text-sm text-red-600">{{ form.end_date.errors.0 }}</p>
+      {% endif %}
+    </div>
+    <div class="col-span-12 md:col-span-6">
+      <label class="block text-sm font-medium text-gray-700" for="id_document">Permit Document</label>
+      {{ form.document }}
+      {% if form.document.errors %}
+        <p class="mt-1 text-sm text-red-600">{{ form.document.errors.0 }}</p>
+      {% endif %}
+    </div>
+  </div>
+  <div class="mt-6 flex gap-2">
+    <button type="submit" class="inline-flex items-center rounded bg-sky-600 px-4 py-2 text-white hover:bg-sky-700">Save</button>
+    <a href="{% url 'dashboard:vehicles_detail' vehicle.pk %}?tab=permits" class="inline-flex items-center rounded border px-3 py-2 text-sm hover:bg-gray-50">Cancel</a>
+  </div>
+</form>
+{% endblock %}

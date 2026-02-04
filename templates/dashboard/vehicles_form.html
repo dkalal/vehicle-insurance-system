@@ -3,6 +3,12 @@
 {% block content %}
 <h1 class="text-xl font-semibold mb-4">{% if form.instance.pk %}Edit Vehicle{% else %}New Vehicle{% endif %}</h1>
 
+{% if form.errors %}
+  <div class="mb-4 rounded border border-red-200 bg-red-50 p-3 text-red-800 text-sm" role="alert">
+    Please fix the errors below and try again.
+  </div>
+{% endif %}
+
 {% if form.non_field_errors %}
   <div class="mb-4 rounded border-l-4 border-red-500 bg-red-50 p-3 text-red-800">
     {{ form.non_field_errors }}
@@ -14,8 +20,32 @@
   <div class="grid grid-cols-12 gap-4">
     <div class="col-span-12 md:col-span-6">
       <label class="block text-sm font-medium text-gray-700" for="id_owner">Owner</label>
+      <input id="id_owner_search" type="text" placeholder="Quick owner search (type to select)" class="mt-1 mb-2 block w-full rounded-md border border-gray-200 px-3 py-1 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-sky-500 focus:border-sky-500" />
       {{ form.owner }}
       {{ form.owner.errors }}
+      {% if owner_context %}
+        <div class="mt-2 rounded border border-gray-200 bg-gray-50 p-2 text-xs text-gray-700">
+          <div class="flex items-center justify-between">
+            <div>
+              {% if owner_context.customer_type == 'individual' %}
+                {{ owner_context.first_name }} {{ owner_context.last_name }}
+              {% else %}
+                {{ owner_context.company_name }}
+              {% endif %}
+            </div>
+            <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium {% if owner_context.customer_type == 'company' %}bg-indigo-50 text-indigo-700{% else %}bg-emerald-50 text-emerald-700{% endif %}">
+              {% if owner_context.customer_type == 'company' %}Company{% else %}Individual{% endif %}
+            </span>
+          </div>
+          <div class="mt-1 flex flex-wrap gap-x-3">
+            {% if owner_context.email %}<span>{{ owner_context.email }}</span>{% endif %}
+            {% if owner_context.phone %}<span>{{ owner_context.phone }}</span>{% endif %}
+          </div>
+          <div class="mt-1">
+            <a href="{% url 'dashboard:customers_update' owner_context.pk %}" class="text-sky-700 hover:underline">View owner details</a>
+          </div>
+        </div>
+      {% endif %}
     </div>
     <div class="col-span-12 md:col-span-6">
       <label class="block text-sm font-medium text-gray-700" for="id_vehicle_type">Vehicle Type</label>
@@ -106,9 +136,33 @@
   </div>
   {% endif %}
 
-  <div class="mt-6 flex gap-2">
-    <button class="inline-flex items-center rounded bg-sky-600 px-4 py-2 text-white hover:bg-sky-700" type="submit">Save</button>
+  <div class="mt-6 flex flex-wrap gap-2">
+    <button name="save" value="1" class="inline-flex items-center rounded bg-sky-600 px-4 py-2 text-white hover:bg-sky-700" type="submit">Save</button>
+    <button name="save_add_insurance" value="1" class="inline-flex items-center rounded bg-emerald-600 px-4 py-2 text-white hover:bg-emerald-700" type="submit">Save and add insurance</button>
+    <button name="save_add_another" value="1" class="inline-flex items-center rounded bg-sky-500 px-4 py-2 text-white hover:bg-sky-600" type="submit">Save and add another</button>
     <a class="inline-flex items-center rounded border px-3 py-2 text-sm hover:bg-gray-50" href="{% url 'dashboard:vehicles_list' %}">Cancel</a>
   </div>
 </form>
+
+<script>
+  (function() {
+    const searchInput = document.getElementById('id_owner_search');
+    const ownerSelect = document.getElementById('id_owner');
+    if (!searchInput || !ownerSelect) return;
+    searchInput.addEventListener('input', function() {
+      const term = (this.value || '').toLowerCase();
+      if (!term) {
+        return;
+      }
+      const options = Array.from(ownerSelect.options || []);
+      for (let i = 0; i < options.length; i++) {
+        const opt = options[i];
+        if (opt.text.toLowerCase().includes(term)) {
+          ownerSelect.value = opt.value;
+          break;
+        }
+      }
+    });
+  })();
+</script>
 {% endblock %}

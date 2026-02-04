@@ -1,26 +1,90 @@
 {% extends "base.html" %}
 {% block content %}
 <div>
-  <h1 class="text-xl font-semibold">Dashboard</h1>
-  <p class="text-sm text-gray-600 mb-4">Welcome{% if current_tenant %} to {{ current_tenant.name }}{% endif %}. Here are your key metrics.</p>
+  <h1 class="text-xl font-semibold">Vehicle Compliance Dashboard</h1>
+  <p class="text-sm text-gray-600 mb-4">Real-time compliance status for your fleet{% if current_tenant %} — {{ current_tenant.name }}{% endif %}</p>
 
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-    <div class="bg-white rounded shadow p-4">
-      <div class="text-gray-500 text-sm">Active Policies</div>
-      <div class="text-3xl font-semibold">{{ metrics.active_policies }}</div>
+  {% if onboarding_needed %}
+    <div class="mb-6 rounded-lg border border-sky-200 bg-sky-50 p-4">
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 class="text-sm font-semibold text-sky-900">Register your first vehicle</h2>
+          <p class="text-sm text-sky-800">Complete your first vehicle record to unlock compliance tracking and reports.</p>
+        </div>
+        <a class="inline-flex items-center justify-center rounded bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700" href="{% url 'dashboard:onboarding_welcome' %}">Continue onboarding</a>
+      </div>
     </div>
+  {% endif %}
+
+  <!-- Vehicle Compliance Status -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
     <div class="bg-white rounded shadow p-4">
-      <div class="text-gray-500 text-sm">Expiring Soon</div>
-      <div class="text-3xl font-semibold">{{ metrics.expiring_soon }}</div>
+      <div class="text-gray-500 text-sm">Total Vehicles</div>
+      <div class="text-3xl font-semibold">{{ compliance.total }}</div>
     </div>
-    <div class="bg-white rounded shadow p-4">
-      <div class="text-gray-500 text-sm">Vehicles</div>
-      <div class="text-3xl font-semibold">{{ metrics.vehicles }}</div>
+    <div class="bg-emerald-50 border border-emerald-200 rounded shadow p-4">
+      <div class="text-emerald-700 text-sm font-medium">Fully Compliant</div>
+      <div class="text-3xl font-semibold text-emerald-900">{{ compliance.compliant }}</div>
+      <div class="text-xs text-emerald-600 mt-1">Legal to operate</div>
     </div>
-    <div class="bg-white rounded shadow p-4">
-      <div class="text-gray-500 text-sm">Customers</div>
-      <div class="text-3xl font-semibold">{{ metrics.customers }}</div>
+    <div class="bg-amber-50 border border-amber-200 rounded shadow p-4">
+      <div class="text-amber-700 text-sm font-medium">At Risk</div>
+      <div class="text-3xl font-semibold text-amber-900">{{ compliance.at_risk }}</div>
+      <div class="text-xs text-amber-600 mt-1">Expiring within {{ risk_window_days }} days</div>
+    </div>
+    <div class="bg-red-50 border border-red-200 rounded shadow p-4">
+      <div class="text-red-700 text-sm font-medium">Non-Compliant</div>
+      <div class="text-3xl font-semibold text-red-900">{{ compliance.non_compliant }}</div>
+      <div class="text-xs text-red-600 mt-1">Requires immediate action</div>
     </div>
   </div>
+
+  <!-- Secondary Metrics -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+    <div class="bg-white rounded shadow p-4">
+      <div class="text-gray-500 text-sm">Active Insurance Policies</div>
+      <div class="text-2xl font-semibold">{{ metrics.active_policies }}</div>
+    </div>
+    <div class="bg-white rounded shadow p-4">
+      <div class="text-gray-500 text-sm">Registered Customers</div>
+      <div class="text-2xl font-semibold">{{ metrics.customers }}</div>
+    </div>
+  </div>
+
+  {% if expiring_policies %}
+    <div class="mt-6 bg-white rounded shadow p-4">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-sm font-semibold text-gray-800">Vehicles Requiring Attention</h2>
+        <a href="{% url 'dashboard:policies_list' %}?status=active" class="text-sm text-sky-700 hover:underline">
+          View all active policies
+        </a>
+      </div>
+      <div class="overflow-x-auto rounded border border-gray-200">
+        <table class="min-w-full text-sm">
+          <thead class="bg-gray-50 text-left text-gray-600">
+            <tr>
+              <th class="px-3 py-2">Policy #</th>
+              <th class="px-3 py-2">Vehicle</th>
+              <th class="px-3 py-2">Expires</th>
+              <th class="px-3 py-2 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            {% for p in expiring_policies %}
+            <tr class="hover:bg-gray-50">
+              <td class="px-3 py-2">{{ p.policy_number }}</td>
+              <td class="px-3 py-2">{{ p.vehicle.registration_number }}</td>
+              <td class="px-3 py-2">{{ p.end_date|date:"Y-m-d" }}</td>
+              <td class="px-3 py-2 text-right">
+                <a href="{% url 'dashboard:vehicles_detail' p.vehicle.pk %}" class="inline-flex items-center rounded border border-gray-300 px-2 py-1 hover:bg-gray-50">View Vehicle</a>
+                <a href="{% url 'dashboard:policies_renew' p.pk %}" class="inline-flex items-center rounded border border-emerald-600 text-emerald-700 hover:bg-emerald-50 px-2 py-1 ml-1">Renew</a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  {% endif %}
 </div>
 {% endblock %}

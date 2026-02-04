@@ -67,16 +67,16 @@
 
 <div class="mt-4 flex items-center gap-2 text-sm">
   {% if page_obj.has_previous %}
-    <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?page=1">First</a>
-    <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?page={{ page_obj.previous_page_number }}">Prev</a>
+    <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?{% if querystring %}{{ querystring }}&amp;{% endif %}page=1">First</a>
+    <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?{% if querystring %}{{ querystring }}&amp;{% endif %}page={{ page_obj.previous_page_number }}">Prev</a>
   {% else %}
     <span class="rounded border px-2 py-1 opacity-50 cursor-not-allowed">First</span>
     <span class="rounded border px-2 py-1 opacity-50 cursor-not-allowed">Prev</span>
   {% endif %}
   <span class="px-2 py-1">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
   {% if page_obj.has_next %}
-    <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?page={{ page_obj.next_page_number }}">Next</a>
-    <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?page={{ page_obj.paginator.num_pages }}">Last</a>
+    <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?{% if querystring %}{{ querystring }}&amp;{% endif %}page={{ page_obj.next_page_number }}">Next</a>
+    <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?{% if querystring %}{{ querystring }}&amp;{% endif %}page={{ page_obj.paginator.num_pages }}">Last</a>
   {% else %}
     <span class="rounded border px-2 py-1 opacity-50 cursor-not-allowed">Next</span>
     <span class="rounded border px-2 py-1 opacity-50 cursor-not-allowed">Last</span>

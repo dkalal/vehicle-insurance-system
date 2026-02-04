@@ -10,6 +10,9 @@ from apps.core.services.customer_service import create_customer
 from apps.core.services.vehicle_service import create_vehicle
 from apps.core.services.policy_service import create_policy, renew_policy
 from apps.core.services.payment_service import add_payment_and_activate_policy
+from apps.core.services.latra_service import create_latra_record
+from apps.core.services.permit_service import create_vehicle_permit, activate_permit
+from apps.core.models.vehicle_record import PermitType
 from django.core.exceptions import ValidationError
 
 
@@ -99,6 +102,7 @@ class ServiceLayerTests(TestCase):
         return cust, veh
 
     def test_policy_activation_after_full_payment(self):
+        """Policy activates only after a single full payment; partials are rejected."""
         _, vehicle = self._make_customer_and_vehicle()
         start = date.today()
         end = start + timedelta(days=365)
@@ -113,21 +117,24 @@ class ServiceLayerTests(TestCase):
         )
         # Not active until paid fully
         self.assertNotEqual(policy.status, policy.STATUS_ACTIVE)
-        # Partial payment should not activate
-        add_payment_and_activate_policy(
-            created_by=self.admin,
-            policy=policy,
-            amount=Decimal("50.00"),
-            payment_method="cash",
-            reference_number="P01",
-        )
+
+        # Partial payment must be rejected according to full-payment rule
+        with self.assertRaises(ValidationError):
+            add_payment_and_activate_policy(
+                created_by=self.admin,
+                policy=policy,
+                amount=Decimal("50.00"),
+                payment_method="cash",
+                reference_number="P01",
+            )
         policy.refresh_from_db()
         self.assertNotEqual(policy.status, policy.STATUS_ACTIVE)
-        # Full payment now activates
+
+        # Single full payment now activates the policy
         add_payment_and_activate_policy(
             created_by=self.admin,
             policy=policy,
-            amount=Decimal("50.00"),
+            amount=Decimal("100.00"),
             payment_method="cash",
             reference_number="P02",
         )
@@ -135,6 +142,7 @@ class ServiceLayerTests(TestCase):
         self.assertEqual(policy.status, policy.STATUS_ACTIVE)
 
     def test_only_one_active_policy_per_vehicle(self):
+        """Second overlapping policy activation must raise ValidationError."""
         _, vehicle = self._make_customer_and_vehicle()
         start = date.today()
         end = start + timedelta(days=365)
@@ -154,6 +162,7 @@ class ServiceLayerTests(TestCase):
         )
         p1.refresh_from_db()
         self.assertTrue(p1.is_active())
+
         # Attempt to create and activate a second overlapping policy should fail at activation
         p2 = create_policy(
             created_by=self.admin,
@@ -162,13 +171,14 @@ class ServiceLayerTests(TestCase):
             end_date=end,
             premium_amount=Decimal("120.00"),
         )
-        add_payment_and_activate_policy(
-            created_by=self.admin,
-            policy=p2,
-            amount=Decimal("120.00"),
-            payment_method="cash",
-            reference_number="A2",
-        )
+        with self.assertRaises(ValidationError):
+            add_payment_and_activate_policy(
+                created_by=self.admin,
+                policy=p2,
+                amount=Decimal("120.00"),
+                payment_method="cash",
+                reference_number="A2",
+            )
         p2.refresh_from_db()
         # p2 should not be active due to existing active policy
         self.assertNotEqual(p2.status, p2.STATUS_ACTIVE)
@@ -211,3 +221,61 @@ class ServiceLayerTests(TestCase):
         )
         p2.refresh_from_db()
         self.assertTrue(p2.is_active())
+
+    def test_create_latra_respects_tenant_boundaries(self):
+        _, vehicle = self._make_customer_and_vehicle()
+
+        User = get_user_model()
+        other_tenant = Tenant.objects.create(name="OtherCo2", slug="otherco2", is_active=True)
+        other_admin = User.objects.create_user(
+            username="admin3",
+            email="admin3@otherco2.com",
+            password="Strong!Pass123",
+            tenant=other_tenant,
+            role=User.ROLE_ADMIN,
+            is_super_admin=False,
+        )
+
+        with self.assertRaises(ValidationError):
+            create_latra_record(
+                created_by=other_admin,
+                vehicle=vehicle,
+                latra_number="LATRA-001",
+                license_type="Route A",
+                start_date=date.today(),
+            )
+
+    def test_permit_conflicts_enforced(self):
+        """Conflicting permits are rejected on activation, not creation."""
+        _, vehicle = self._make_customer_and_vehicle()
+
+        # Two permit types that conflict with each other
+        pt_a = PermitType.objects.create(tenant=self.tenant, name="City Route")
+        pt_b = PermitType.objects.create(tenant=self.tenant, name="Intercity Route")
+        pt_a.conflicts_with.add(pt_b)
+
+        start = date.today()
+        end = start + timedelta(days=30)
+
+        p1 = create_vehicle_permit(
+            created_by=self.admin,
+            vehicle=vehicle,
+            permit_type=pt_a,
+            reference_number="P-001",
+            start_date=start,
+            end_date=end,
+        )
+        activate_permit(permit_id=p1.id, actor=self.admin)
+
+        p2 = create_vehicle_permit(
+            created_by=self.admin,
+            vehicle=vehicle,
+            permit_type=pt_b,
+            reference_number="P-002",
+            start_date=start,
+            end_date=end,
+        )
+
+        # Activation of conflicting permit should be blocked
+        with self.assertRaises(ValidationError):
+            activate_permit(permit_id=p2.id, actor=self.admin)

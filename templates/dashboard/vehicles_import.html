@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+  <div>
+    <h1 class="text-xl font-semibold">Import Vehicles</h1>
+    <p class="text-sm text-gray-600">Upload a CSV file to create vehicles in bulk.</p>
+  </div>
+  <a href="{% url 'dashboard:vehicles_list' %}" class="inline-flex items-center rounded border px-3 py-2 text-sm hover:bg-gray-50">Back to Vehicles</a>
+</div>
+
+<div class="grid gap-6 lg:grid-cols-3">
+  <form method="post" enctype="multipart/form-data" class="lg:col-span-2 bg-white rounded border border-gray-200 p-4">
+    {% csrf_token %}
+    <div>
+      <label class="block text-sm font-medium text-gray-700" for="id_file">CSV File</label>
+      {{ form.file }}
+      {% if form.file.errors %}
+        <p class="text-sm text-red-600 mt-1">{{ form.file.errors|striptags }}</p>
+      {% endif %}
+    </div>
+    <div class="mt-4 flex gap-2">
+      <button type="submit" class="inline-flex items-center rounded bg-sky-600 px-4 py-2 text-white hover:bg-sky-700">Import</button>
+      <a href="{% url 'dashboard:vehicles_list' %}" class="inline-flex items-center rounded border px-3 py-2 text-sm hover:bg-gray-50">Cancel</a>
+    </div>
+  </form>
+
+  <div class="bg-white rounded border border-gray-200 p-4 text-sm text-gray-600">
+    <h2 class="text-base font-semibold text-gray-800">CSV Columns</h2>
+    <p class="mt-2">Required columns:</p>
+    <ul class="list-disc pl-5 mt-1 space-y-1">
+      <li>customer_type (individual or company)</li>
+      <li>email, phone</li>
+      <li>vehicle_type (motorcycle, bajaji, car)</li>
+      <li>registration_number, make, model, year</li>
+    </ul>
+    <p class="mt-3">Optional columns:</p>
+    <p class="mt-1">first_name, last_name, id_number, company_name, company_registration_number, tax_id, address, city, region, postal_code, customer_notes, color, chassis_number, engine_number, seating_capacity, engine_capacity, vehicle_notes</p>
+  </div>
+</div>
+
+{% if result and result.errors %}
+  <div class="mt-6 bg-white rounded border border-gray-200 p-4">
+    <h2 class="text-lg font-semibold">Import Errors</h2>
+    <p class="text-sm text-gray-600">Rows that could not be imported are listed below.</p>
+    <div class="overflow-x-auto mt-3">
+      <table class="min-w-full text-sm">
+        <thead class="bg-gray-50 text-left text-gray-600">
+          <tr>
+            <th class="px-3 py-2">Row</th>
+            <th class="px-3 py-2">Issue</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+          {% for err in result.errors %}
+            <tr>
+              <td class="px-3 py-2 font-medium">{{ err.row }}</td>
+              <td class="px-3 py-2">
+                <ul class="list-disc pl-4">
+                  {% for msg in err.errors %}
+                    <li>{{ msg }}</li>
+                  {% endfor %}
+                </ul>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endif %}
+{% endblock %}

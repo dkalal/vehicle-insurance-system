@@ -11,6 +11,7 @@ from .views import (
     PlatformConfigUpdateView,
     SupportRequestListView,
     SupportRequestUpdateView,
+    SuperAdminUserPasswordResetView,
 )
 
 app_name = "super_admin"
@@ -27,4 +28,5 @@ urlpatterns = [
     path("platform-config/", PlatformConfigUpdateView.as_view(), name="platform_config"),
     path("support/", SupportRequestListView.as_view(), name="support_list"),
     path("support/<int:pk>/edit/", SupportRequestUpdateView.as_view(), name="support_update"),
+    path("users/<int:user_pk>/force-reset-password/", SuperAdminUserPasswordResetView.as_view(), name="user_force_reset_password"),
 ]

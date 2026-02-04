@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-3xl">
+  <div class="flex items-center justify-between mb-4">
+    <div>
+      <h1 class="text-xl font-semibold">Organization settings</h1>
+      <p class="text-sm text-gray-600">Manage your company's contact details and how the system behaves for your team.</p>
+    </div>
+  </div>
+
+  {% if current_tenant %}
+  <div class="mb-4 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+    <div class="bg-white rounded shadow p-3">
+      <div class="text-gray-500">Organization</div>
+      <div class="font-medium text-gray-900 mt-1">{{ current_tenant.name }}</div>
+    </div>
+    <div class="bg-white rounded shadow p-3">
+      <div class="text-gray-500">Tenant slug</div>
+      <div class="font-mono text-xs text-gray-800 mt-1">{{ current_tenant.slug }}</div>
+    </div>
+    <div class="bg-white rounded shadow p-3">
+      <div class="text-gray-500">Custom domain</div>
+      <div class="text-xs text-gray-800 mt-1">{{ current_tenant.domain|default:"Not configured" }}</div>
+    </div>
+  </div>
+  {% endif %}
+
+  <form method="post" novalidate class="bg-white rounded shadow p-4">
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+      <div class="mb-4 text-sm text-red-600">
+        {{ form.non_field_errors }}
+      </div>
+    {% endif %}
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <label for="id_name" class="block text-sm font-medium text-gray-700">Company name</label>
+        {{ form.name }}
+        {% if form.name.errors %}
+          <p class="mt-1 text-sm text-red-600">{{ form.name.errors.0 }}</p>
+        {% endif %}
+      </div>
+      <div>
+        <label for="id_contact_email" class="block text-sm font-medium text-gray-700">Contact email</label>
+        {{ form.contact_email }}
+        {% if form.contact_email.errors %}
+          <p class="mt-1 text-sm text-red-600">{{ form.contact_email.errors.0 }}</p>
+        {% endif %}
+      </div>
+      <div>
+        <label for="id_contact_phone" class="block text-sm font-medium text-gray-700">Contact phone</label>
+        {{ form.contact_phone }}
+        {% if form.contact_phone.errors %}
+          <p class="mt-1 text-sm text-red-600">{{ form.contact_phone.errors.0 }}</p>
+        {% endif %}
+      </div>
+      <div>
+        <label for="id_operation_type" class="block text-sm font-medium text-gray-700">Operation type</label>
+        {{ form.operation_type }}
+        {% if form.operation_type.errors %}
+          <p class="mt-1 text-sm text-red-600">{{ form.operation_type.errors.0 }}</p>
+        {% endif %}
+      </div>
+      <div>
+        <label for="id_region" class="block text-sm font-medium text-gray-700">Primary region</label>
+        {{ form.region }}
+        {% if form.region.errors %}
+          <p class="mt-1 text-sm text-red-600">{{ form.region.errors.0 }}</p>
+        {% endif %}
+      </div>
+      <div>
+        <label for="id_city" class="block text-sm font-medium text-gray-700">Primary city</label>
+        {{ form.city }}
+        {% if form.city.errors %}
+          <p class="mt-1 text-sm text-red-600">{{ form.city.errors.0 }}</p>
+        {% endif %}
+      </div>
+      <div>
+        <label for="id_expiry_reminder_days" class="block text-sm font-medium text-gray-700">Expiry reminder window (days)</label>
+        {{ form.expiry_reminder_days }}
+        {% if form.expiry_reminder_days.errors %}
+          <p class="mt-1 text-sm text-red-600">{{ form.expiry_reminder_days.errors.0 }}</p>
+        {% elif form.fields.expiry_reminder_days.help_text %}
+          <p class="mt-1 text-xs text-gray-500">{{ form.fields.expiry_reminder_days.help_text }}</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="mt-6 flex gap-2">
+      <button type="submit" class="inline-flex items-center rounded bg-sky-600 px-4 py-2 text-white hover:bg-sky-700">Save changes</button>
+      <a href="{% url 'dashboard:home' %}" class="inline-flex items-center rounded border px-3 py-2 text-sm hover:bg-gray-50">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

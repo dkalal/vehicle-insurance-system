@@ -1,21 +1,72 @@
 {% extends "base.html" %}
+{% load dict_extras %}
 {% block content %}
-<div class="flex items-center justify-between mb-4">
-  <h1 class="text-xl font-semibold">Vehicles</h1>
-  <a href="{% url 'dashboard:vehicles_create' %}" class="inline-flex items-center rounded bg-sky-600 px-3 py-2 text-white hover:bg-sky-700">New Vehicle</a>
+<div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+  <div>
+    <h1 class="text-xl font-semibold">Vehicles</h1>
+    {% if owner_filter %}
+      <p class="mt-1 text-sm text-gray-600">
+        Showing vehicles for owner:
+        <span class="inline-flex items-center rounded-full bg-sky-50 px-2 py-0.5 text-xs font-medium text-sky-700">
+          {% if owner_filter.customer_type == 'individual' %}
+            {{ owner_filter.first_name }} {{ owner_filter.last_name }}
+          {% else %}
+            {{ owner_filter.company_name }}
+          {% endif %}
+        </span>
+        <a href="{% url 'dashboard:vehicles_list' %}" class="ml-2 text-xs text-sky-700 hover:underline">Clear owner filter</a>
+      </p>
+    {% endif %}
+  </div>
+  <div class="flex flex-wrap gap-2">
+    {% if request.user.role == 'admin' or request.user.role == 'manager' %}
+      <a href="{% url 'dashboard:vehicles_import' %}" class="inline-flex items-center rounded border border-sky-600 px-3 py-2 text-sky-700 hover:bg-sky-50">Import CSV</a>
+      <a href="{% url 'dashboard:vehicles_export' %}?{{ request.GET.urlencode }}" class="inline-flex items-center rounded border border-gray-300 px-3 py-2 text-sm hover:bg-gray-50">Export CSV</a>
+    {% endif %}
+    <a href="{% url 'dashboard:vehicles_create' %}" class="inline-flex items-center rounded bg-sky-600 px-3 py-2 text-white hover:bg-sky-700">New Vehicle</a>
+  </div>
 </div>
 
 <form method="get" class="grid grid-cols-12 gap-3 mb-4" role="search" aria-label="Search vehicles">
-  <div class="col-span-12 md:col-span-8">
-    <input type="text" name="q" placeholder="Search reg no, make, model, owner" value="{{ request.GET.q }}" class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500" />
+  <div class="col-span-12 md:col-span-4">
+    <label class="sr-only" for="id_vehicle_search">Search vehicles</label>
+    <input id="id_vehicle_search" type="text" name="q" placeholder="Search reg no, make, model, owner" value="{{ request.GET.q }}" class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500" />
+  </div>
+  <div class="col-span-12 md:col-span-3">
+    <select name="vehicle_type" class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+      <option value="">All Types</option>
+      {% for value, label in vehicle_type_choices %}
+      <option value="{{ value }}"{% if current_vehicle_type == value %} selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
   </div>
   <div class="col-span-12 md:col-span-2">
-    <button class="w-full inline-flex items-center justify-center rounded border border-gray-300 px-3 py-2 text-sm hover:bg-gray-50" type="submit">Search</button>
+    <select name="compliance" class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+      <option value="">All Compliance</option>
+      <option value="compliant"{% if current_compliance == 'compliant' %} selected{% endif %}>Compliant</option>
+      <option value="at_risk"{% if current_compliance == 'at_risk' %} selected{% endif %}>At risk</option>
+      <option value="non_compliant"{% if current_compliance == 'non_compliant' %} selected{% endif %}>Non-compliant</option>
+    </select>
+  </div>
+  <div class="col-span-6 md:col-span-1">
+    <button class="w-full inline-flex items-center justify-center rounded border border-gray-300 px-3 py-2 text-sm hover:bg-gray-50" type="submit">Filter</button>
+  </div>
+  <div class="col-span-6 md:col-span-1">
+    <a class="w-full inline-flex items-center justify-center rounded border border-gray-300 px-3 py-2 text-sm hover:bg-gray-50" href="{% url 'dashboard:vehicles_list' %}">Clear</a>
+  </div>
+  <div class="col-span-6 md:col-span-2">
+    <label class="sr-only" for="id_created_from">Created from</label>
+    <input id="id_created_from" type="date" name="created_from" value="{{ created_from }}" class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500" />
+  </div>
+  <div class="col-span-6 md:col-span-2">
+    <label class="sr-only" for="id_created_to">Created to</label>
+    <input id="id_created_to" type="date" name="created_to" value="{{ created_to }}" class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500" />
   </div>
 </form>
 
 <div class="overflow-x-auto rounded border border-gray-200 bg-white">
   <table class="min-w-full text-sm">
+    <caption class="sr-only">Tenant vehicle list</caption>
     <thead class="bg-gray-50 text-left text-gray-600">
       <tr>
         <th class="px-3 py-2">Reg No.</th>
@@ -23,6 +74,7 @@
         <th class="px-3 py-2">Make/Model</th>
         <th class="px-3 py-2">Owner</th>
         <th class="px-3 py-2">Year</th>
+        <th class="px-3 py-2">Compliance</th>
         <th class="px-3 py-2 text-right">Actions</th>
       </tr>
     </thead>
@@ -34,14 +86,37 @@
         <td class="px-3 py-2">{{ v.make }} {{ v.model }}</td>
         <td class="px-3 py-2">
           {% if v.owner.customer_type == 'individual' %}
-            {{ v.owner.first_name }} {{ v.owner.last_name }}
+            <a href="{% url 'dashboard:customers_update' v.owner.pk %}" class="text-sky-700 hover:underline">
+              {{ v.owner.first_name }} {{ v.owner.last_name }}
+            </a>
           {% else %}
-            {{ v.owner.company_name }}
+            <a href="{% url 'dashboard:customers_update' v.owner.pk %}" class="text-sky-700 hover:underline">
+              {{ v.owner.company_name }}
+            </a>
           {% endif %}
         </td>
         <td class="px-3 py-2">{{ v.year }}</td>
+        <td class="px-3 py-2">
+          {% with compliance=compliance_by_vehicle|get_item:v.pk %}
+            {% if compliance %}
+              {% if compliance.status == 'compliant' %}
+                <span class="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">Compliant</span>
+              {% elif compliance.status == 'at_risk' %}
+                <span class="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">At risk</span>
+              {% else %}
+                <span class="inline-flex items-center rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-700">Non-compliant</span>
+              {% endif %}
+              {% if compliance.short_message %}
+                <div class="mt-0.5 text-xs text-gray-500">{{ compliance.short_message }}</div>
+              {% endif %}
+            {% else %}
+              <span class="text-xs text-gray-400">Unknown</span>
+            {% endif %}
+          {% endwith %}
+        </td>
         <td class="px-3 py-2 text-right">
-          <a class="inline-flex items-center rounded border border-sky-600 text-sky-700 hover:bg-sky-50 px-2 py-1" href="{% url 'dashboard:vehicles_update' v.pk %}">Edit</a>
+          <a class="inline-flex items-center rounded border border-gray-300 px-2 py-1 hover:bg-gray-50" href="{% url 'dashboard:vehicles_detail' v.pk %}">View</a>
+          <a class="inline-flex items-center rounded border border-sky-600 text-sky-700 hover:bg-sky-50 px-2 py-1 ml-1" href="{% url 'dashboard:vehicles_update' v.pk %}">Edit</a>
           {% if request.user.role == 'admin' or request.user.role == 'manager' %}
           <form method="post" action="{% url 'dashboard:vehicles_delete' v.pk %}" class="inline" onsubmit="return confirm('Delete this vehicle?');">
             {% csrf_token %}
@@ -51,7 +126,18 @@
         </td>
       </tr>
       {% empty %}
-      <tr><td colspan="6" class="px-3 py-6 text-center text-gray-500">No vehicles found.</td></tr>
+      <tr>
+        <td colspan="7" class="px-3 py-6 text-center text-gray-500">
+          {% if onboarding_needed %}
+            <div class="space-y-2">
+              <p>No vehicles yet. Your first vehicle is the foundation for compliance tracking.</p>
+              <a href="{% url 'dashboard:onboarding_welcome' %}" class="inline-flex items-center rounded bg-sky-600 px-3 py-2 text-sm text-white hover:bg-sky-700">Start onboarding</a>
+            </div>
+          {% else %}
+            No vehicles found.
+          {% endif %}
+        </td>
+      </tr>
       {% endfor %}
     </tbody>
   </table>
@@ -59,19 +145,19 @@
 
 <div class="mt-4 flex items-center gap-2 text-sm">
   {% if page_obj.has_previous %}
-    <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?page=1">First</a>
-    <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?page={{ page_obj.previous_page_number }}">Prev</a>
+    <a class="rounded border px-2 py-1 hover:bg-gray-50" aria-label="First page of vehicles" href="?page=1{% if querystring %}&{{ querystring }}{% endif %}">First</a>
+    <a class="rounded border px-2 py-1 hover:bg-gray-50" aria-label="Previous page of vehicles" href="?page={{ page_obj.previous_page_number }}{% if querystring %}&{{ querystring }}{% endif %}">Prev</a>
   {% else %}
-    <span class="rounded border px-2 py-1 opacity-50 cursor-not-allowed">First</span>
-    <span class="rounded border px-2 py-1 opacity-50 cursor-not-allowed">Prev</span>
+    <span class="rounded border px-2 py-1 opacity-50 cursor-not-allowed" aria-hidden="true">First</span>
+    <span class="rounded border px-2 py-1 opacity-50 cursor-not-allowed" aria-hidden="true">Prev</span>
   {% endif %}
   <span class="px-2 py-1">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
   {% if page_obj.has_next %}
-    <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?page={{ page_obj.next_page_number }}">Next</a>
-    <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?page={{ page_obj.paginator.num_pages }}">Last</a>
+    <a class="rounded border px-2 py-1 hover:bg-gray-50" aria-label="Next page of vehicles" href="?page={{ page_obj.next_page_number }}{% if querystring %}&{{ querystring }}{% endif %}">Next</a>
+    <a class="rounded border px-2 py-1 hover:bg-gray-50" aria-label="Last page of vehicles" href="?page={{ page_obj.paginator.num_pages }}{% if querystring %}&{{ querystring }}{% endif %}">Last</a>
   {% else %}
-    <span class="rounded border px-2 py-1 opacity-50 cursor-not-allowed">Next</span>
-    <span class="rounded border px-2 py-1 opacity-50 cursor-not-allowed">Last</span>
+    <span class="rounded border px-2 py-1 opacity-50 cursor-not-allowed" aria-hidden="true">Next</span>
+    <span class="rounded border px-2 py-1 opacity-50 cursor-not-allowed" aria-hidden="true">Last</span>
   {% endif %}
 </div>
 {% endblock %}

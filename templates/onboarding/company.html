@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-3xl">
+  <div class="mb-6">
+    <p class="text-sm font-semibold uppercase tracking-wide text-sky-600">Step 1 of 3</p>
+    <h1 class="text-2xl font-semibold text-gray-900">Confirm your company details</h1>
+    <p class="mt-2 text-sm text-gray-600">We’ll use this for reports and reminders. You can edit later.</p>
+  </div>
+
+  <form method="post" class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+    {% csrf_token %}
+    <div class="grid grid-cols-12 gap-4">
+      <div class="col-span-12">
+        <label class="block text-sm font-medium text-gray-700" for="id_name">Company name</label>
+        {{ form.name }}
+        {{ form.name.errors }}
+      </div>
+      <div class="col-span-12 md:col-span-6">
+        <label class="block text-sm font-medium text-gray-700" for="id_contact_email">Contact email</label>
+        {{ form.contact_email }}
+        {{ form.contact_email.errors }}
+      </div>
+      <div class="col-span-12 md:col-span-6">
+        <label class="block text-sm font-medium text-gray-700" for="id_contact_phone">Contact phone (optional)</label>
+        {{ form.contact_phone }}
+        {{ form.contact_phone.errors }}
+      </div>
+      <div class="col-span-12 md:col-span-6">
+        <label class="block text-sm font-medium text-gray-700" for="id_operation_type">Operation type</label>
+        {{ form.operation_type }}
+        {{ form.operation_type.errors }}
+      </div>
+      <div class="col-span-12 md:col-span-6">
+        <label class="block text-sm font-medium text-gray-700" for="id_region">Default region (optional)</label>
+        {{ form.region }}
+        {{ form.region.errors }}
+      </div>
+      <div class="col-span-12 md:col-span-6">
+        <label class="block text-sm font-medium text-gray-700" for="id_city">Default city (optional)</label>
+        {{ form.city }}
+        {{ form.city.errors }}
+      </div>
+    </div>
+
+    <div class="mt-6 flex items-center gap-2">
+      <button type="submit" class="inline-flex items-center rounded bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700">Continue</button>
+      <a class="inline-flex items-center rounded border border-gray-300 px-3 py-2 text-sm hover:bg-gray-50" href="{% url 'dashboard:onboarding_welcome' %}">Back</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

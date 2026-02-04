@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% load dict_extras %}
+{% block content %}
+<div class="max-w-4xl">
+  <div class="mb-6">
+    <p class="text-sm font-semibold uppercase tracking-wide text-sky-600">Step 2 of 3</p>
+    <h1 class="text-2xl font-semibold text-gray-900">Vehicle basics</h1>
+    <p class="mt-2 text-sm text-gray-600">Start with the essentials. We’ll add compliance documents later.</p>
+  </div>
+
+  {% if form.non_field_errors %}
+    <div class="mb-4 rounded border-l-4 border-red-500 bg-red-50 p-3 text-red-800">
+      {{ form.non_field_errors }}
+    </div>
+  {% endif %}
+
+  <form method="post" class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+    {% csrf_token %}
+    <div class="grid grid-cols-12 gap-4">
+      <div class="col-span-12 md:col-span-6">
+        <label class="block text-sm font-medium text-gray-700" for="id_registration_number">Registration number</label>
+        {{ form.registration_number }}
+        {{ form.registration_number.errors }}
+      </div>
+      <div class="col-span-12 md:col-span-6">
+        <label class="block text-sm font-medium text-gray-700" for="id_vehicle_type">Vehicle type</label>
+        {{ form.vehicle_type }}
+        {{ form.vehicle_type.errors }}
+      </div>
+      <div class="col-span-12 md:col-span-4">
+        <label class="block text-sm font-medium text-gray-700" for="id_make">Make</label>
+        {{ form.make }}
+        {{ form.make.errors }}
+      </div>
+      <div class="col-span-12 md:col-span-4">
+        <label class="block text-sm font-medium text-gray-700" for="id_model">Model</label>
+        {{ form.model }}
+        {{ form.model.errors }}
+      </div>
+      <div class="col-span-12 md:col-span-4">
+        <label class="block text-sm font-medium text-gray-700" for="id_year">Year</label>
+        {{ form.year }}
+        {{ form.year.errors }}
+      </div>
+      <div class="col-span-12 md:col-span-6">
+        <label class="block text-sm font-medium text-gray-700" for="id_color">Color (optional)</label>
+        {{ form.color }}
+        {{ form.color.errors }}
+      </div>
+    </div>
+
+    {% if df_defs %}
+      <hr class="my-6" />
+      <h2 class="text-lg font-medium mb-2">Additional fields</h2>
+      <div class="grid grid-cols-12 gap-4">
+        {% for d in df_defs %}
+          <div class="col-span-12 md:col-span-6">
+            <label class="block text-sm font-medium text-gray-700" for="id_df_{{ d.key }}">{{ d.name }}{% if d.is_required %} <span class="text-red-600" aria-hidden="true">*</span>{% endif %}</label>
+            {% if d.data_type == 'text' %}
+              <input id="id_df_{{ d.key }}" name="df_{{ d.key }}" type="text" class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500" value="{{ df_values|get_item:d.key }}" {% if d.is_required %}required{% endif %} />
+            {% elif d.data_type == 'number' %}
+              <input id="id_df_{{ d.key }}" name="df_{{ d.key }}" type="number" step="any" class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500" value="{{ df_values|get_item:d.key }}" {% if d.is_required %}required{% endif %} />
+            {% elif d.data_type == 'date' %}
+              <input id="id_df_{{ d.key }}" name="df_{{ d.key }}" type="date" class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500" value="{{ df_values|get_item:d.key }}" {% if d.is_required %}required{% endif %} />
+            {% elif d.data_type == 'boolean' %}
+              <select id="id_df_{{ d.key }}" name="df_{{ d.key }}" class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500" {% if d.is_required %}required{% endif %}>
+                <option value="">Select...</option>
+                <option value="true" {% if df_values|get_item:d.key|stringformat:"s" == 'True' or df_values|get_item:d.key == 'true' %}selected{% endif %}>Yes</option>
+                <option value="false" {% if df_values|get_item:d.key|stringformat:"s" == 'False' or df_values|get_item:d.key == 'false' %}selected{% endif %}>No</option>
+              </select>
+            {% elif d.data_type == 'dropdown' %}
+              <select id="id_df_{{ d.key }}" name="df_{{ d.key }}" class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500" {% if d.is_required %}required{% endif %}>
+                <option value="">Select...</option>
+                {% for opt in d.options %}
+                  <option value="{{ opt }}" {% if df_values|get_item:d.key == opt %}selected{% endif %}>{{ opt }}</option>
+                {% endfor %}
+              </select>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <div class="mt-6 flex items-center gap-2">
+      <button type="submit" class="inline-flex items-center rounded bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700">Continue</button>
+      <a class="inline-flex items-center rounded border border-gray-300 px-3 py-2 text-sm hover:bg-gray-50" href="{% url 'dashboard:onboarding_company' %}">Back</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

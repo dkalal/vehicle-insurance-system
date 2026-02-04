@@ -36,6 +36,9 @@ urlpatterns = [
     # API endpoints
     path('api/', include('apps.api.urls')),
     
+    # Notifications
+    path('', include('apps.notifications.urls')),
+    
     # Health monitoring
     path('health/', include('apps.monitoring.urls')),
     

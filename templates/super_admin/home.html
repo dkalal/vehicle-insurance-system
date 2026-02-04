@@ -2,41 +2,84 @@
 {% block content %}
   <h1 class="text-xl font-semibold mb-2">Super Admin</h1>
   <p class="text-sm text-gray-600 mb-4">Platform management area. Manage tenants, platform settings, and audit logs.</p>
+
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
     <div class="bg-white rounded shadow p-4 flex flex-col justify-between">
       <div>
         <h2 class="font-medium">Tenants</h2>
-        <p class="text-sm text-gray-600">Manage insurance companies (activate/deactivate/soft-delete).</p>
+        <p class="text-sm text-gray-600 mb-3">Manage operating organizations (tenants).</p>
+        <dl class="grid grid-cols-2 gap-2 text-xs text-gray-700">
+          <div>
+            <dt class="text-gray-500">Total</dt>
+            <dd class="font-semibold">{{ overview.tenants_total|default:"0" }}</dd>
+          </div>
+          <div>
+            <dt class="text-gray-500">Active</dt>
+            <dd class="font-semibold text-green-700">{{ overview.tenants_active|default:"0" }}</dd>
+          </div>
+          <div>
+            <dt class="text-gray-500">Inactive</dt>
+            <dd class="font-semibold text-yellow-700">{{ overview.tenants_inactive|default:"0" }}</dd>
+          </div>
+          <div>
+            <dt class="text-gray-500">Deleted</dt>
+            <dd class="font-semibold text-gray-700">{{ overview.tenants_deleted|default:"0" }}</dd>
+          </div>
+        </dl>
       </div>
-      <div class="mt-3">
-        <a class="inline-flex items-center rounded bg-sky-600 px-3 py-2 text-white hover:bg-sky-700" href="{% url 'super_admin:tenants' %}">Open</a>
+      <div class="mt-4 flex items-center justify-between">
+        <a class="inline-flex items-center rounded bg-sky-600 px-3 py-2 text-white text-sm hover:bg-sky-700" href="{% url 'super_admin:tenants' %}">Open</a>
       </div>
     </div>
+
     <div class="bg-white rounded shadow p-4 flex flex-col justify-between">
       <div>
         <h2 class="font-medium">Audit Logs</h2>
-        <p class="text-sm text-gray-600">Monitor platform activity. Read-only.</p>
+        <p class="text-sm text-gray-600 mb-3">Monitor platform activity. Read-only.</p>
+        <dl class="space-y-1 text-xs text-gray-700">
+          <div class="flex items-center justify-between">
+            <dt class="text-gray-500">Entries (last 24h)</dt>
+            <dd class="font-semibold">{{ overview.audit_entries_24h|default:"0" }}</dd>
+          </div>
+          <div class="flex items-center justify-between">
+            <dt class="text-gray-500">Last event</dt>
+            <dd class="font-medium">{% if overview.last_audit_timestamp %}{{ overview.last_audit_timestamp|date:"Y-m-d H:i" }}{% else %}<span class="text-gray-400">No events yet</span>{% endif %}</dd>
+          </div>
+        </dl>
       </div>
-      <div class="mt-3">
-        <a class="inline-flex items-center rounded border border-sky-600 text-sky-700 hover:bg-sky-50 px-3 py-2" href="{% url 'super_admin:audit_logs' %}">View Logs</a>
+      <div class="mt-4 flex items-center justify-between">
+        <a class="inline-flex items-center rounded border border-sky-600 text-sky-700 hover:bg-sky-50 px-3 py-2 text-sm" href="{% url 'super_admin:audit_logs' %}">View Logs</a>
       </div>
     </div>
+
     <div class="bg-white rounded shadow p-4 flex flex-col justify-between">
       <div>
         <h2 class="font-medium">Platform Config</h2>
-        <p class="text-sm text-gray-600">Global settings (maintenance mode, support, announcements).</p>
+        <p class="text-sm text-gray-600 mb-3">Global settings (maintenance mode, support, announcements).</p>
+        <div class="flex items-center gap-2 text-xs">
+          {% if overview.maintenance_mode %}
+            <span class="inline-flex items-center rounded bg-red-100 text-red-800 px-2 py-1 font-semibold">Maintenance ON</span>
+          {% else %}
+            <span class="inline-flex items-center rounded bg-green-100 text-green-800 px-2 py-1 font-semibold">Maintenance OFF</span>
+          {% endif %}
+          {% if overview.support_open %}
+            <span class="inline-flex items-center rounded bg-amber-50 text-amber-800 px-2 py-1">{{ overview.support_open }} open support ticket{% if overview.support_open|default:0 != 1 %}s{% endif %}</span>
+          {% endif %}
+        </div>
       </div>
-      <div class="mt-3">
-        <a class="inline-flex items-center rounded border border-gray-300 hover:bg-gray-50 px-3 py-2" href="{% url 'super_admin:platform_config' %}">Configure</a>
+      <div class="mt-4 flex items-center justify-between">
+        <a class="inline-flex items-center rounded border border-gray-300 hover:bg-gray-50 px-3 py-2 text-sm" href="{% url 'super_admin:platform_config' %}">Configure</a>
       </div>
     </div>
+
     <div class="bg-white rounded shadow p-4 flex flex-col justify-between">
       <div>
         <h2 class="font-medium">Support Requests</h2>
-        <p class="text-sm text-gray-600">View and triage tenant-submitted support tickets.</p>
+        <p class="text-sm text-gray-600 mb-3">View and triage tenant-submitted support tickets.</p>
+        <p class="text-xs text-gray-700">Open tickets: <span class="font-semibold">{{ overview.support_open|default:"0" }}</span></p>
       </div>
-      <div class="mt-3">
-        <a class="inline-flex items-center rounded border border-sky-600 text-sky-700 hover:bg-sky-50 px-3 py-2" href="{% url 'super_admin:support_list' %}">Manage</a>
+      <div class="mt-4 flex items-center justify-between">
+        <a class="inline-flex items-center rounded border border-sky-600 text-sky-700 hover:bg-sky-50 px-3 py-2 text-sm" href="{% url 'super_admin:support_list' %}">Manage</a>
       </div>
     </div>
   </div>

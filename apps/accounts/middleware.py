@@ -47,3 +47,36 @@ class LoginRateLimitMiddleware(MiddlewareMixin):
             )
             return redirect('accounts:login')
         return None
+
+
+class ForcePasswordChangeMiddleware(MiddlewareMixin):
+    def process_request(self, request):
+        user = getattr(request, 'user', None)
+        if not user or not user.is_authenticated:
+            return None
+        if getattr(user, 'is_super_admin', False):
+            return None
+        if not getattr(user, 'must_change_password', False):
+            return None
+
+        path = request.path or ''
+
+        from django.urls import reverse
+
+        allowed_paths = set()
+        try:
+            allowed_paths.update({
+                reverse('accounts:force_password_change'),
+                reverse('accounts:logout'),
+                reverse('accounts:login'),
+            })
+        except Exception:
+            allowed_paths.update({'/accounts/login/'})
+
+        if path.startswith('/static/') or path.startswith('/media/'):
+            return None
+        if path in allowed_paths:
+            return None
+
+        messages.warning(request, 'You must set a new password before continuing.')
+        return redirect('accounts:force_password_change')

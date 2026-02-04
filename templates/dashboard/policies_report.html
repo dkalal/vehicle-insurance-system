@@ -1,7 +1,10 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="flex items-center justify-between mb-4">
-  <h1 class="text-xl font-semibold">Policies Report</h1>
+  <div>
+    <h1 class="text-xl font-semibold">Policies Report</h1>
+    <p class="mt-1 text-xs text-gray-600">Tenant-scoped view of policies. Use filters and exports for compliance and audit needs.</p>
+  </div>
   <div class="flex gap-2">
     <a class="inline-flex items-center rounded border px-3 py-2 text-sm hover:bg-gray-50" href="?status={{ request.GET.status }}&export=csv">Export CSV</a>
     <a class="inline-flex items-center rounded border px-3 py-2 text-sm hover:bg-gray-50" href="?status={{ request.GET.status }}&export=xlsx">Export XLSX</a>
@@ -16,30 +19,46 @@
       <option value="expired" {% if request.GET.status == 'expired' %}selected{% endif %}>Expired</option>
     </select>
   </div>
-  <div class="col-span-12 md:col-span-2">
+  <div class="col-span-12 md:col-span-3">
+    <input type="date" name="start_from" value="{{ request.GET.start_from }}" class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500" placeholder="Start from">
+  </div>
+  <div class="col-span-12 md:col-span-3">
+    <input type="date" name="start_to" value="{{ request.GET.start_to }}" class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500" placeholder="Start to">
+  </div>
+  <div class="col-span-12 md:col-span-3">
     <button class="w-full inline-flex items-center justify-center rounded border border-gray-300 px-3 py-2 text-sm hover:bg-gray-50" type="submit">Filter</button>
   </div>
 </form>
 
 <div class="overflow-x-auto rounded border border-gray-200 bg-white">
-  <table class="min-w-full text-sm">
+  <table class="min-w-full text-sm" aria-label="Policies report for this organization">
     <thead class="bg-gray-50 text-left text-gray-600">
       <tr>
-        <th class="px-3 py-2">Policy #</th>
-        <th class="px-3 py-2">Status</th>
-        <th class="px-3 py-2">Period</th>
-        <th class="px-3 py-2">Premium</th>
-        <th class="px-3 py-2">Coverage</th>
-        <th class="px-3 py-2">Vehicle</th>
-        <th class="px-3 py-2">Customer</th>
+        <th scope="col" class="px-3 py-2">Policy #</th>
+        <th scope="col" class="px-3 py-2">Status</th>
+        <th scope="col" class="px-3 py-2">Period</th>
+        <th scope="col" class="px-3 py-2">Premium</th>
+        <th scope="col" class="px-3 py-2">Coverage</th>
+        <th scope="col" class="px-3 py-2">Vehicle</th>
+        <th scope="col" class="px-3 py-2">Customer</th>
       </tr>
     </thead>
     <tbody class="divide-y divide-gray-100">
       {% for p in policies %}
       <tr class="hover:bg-gray-50">
-        <td class="px-3 py-2">{{ p.policy_number }}</td>
-        <td class="px-3 py-2">{{ p.status }}</td>
-        <td class="px-3 py-2">{{ p.start_date|date:"Y-m-d" }} → {{ p.end_date|date:"Y-m-d" }}</td>
+        <td class="px-3 py-2 font-medium">
+          <a href="{% url 'dashboard:policies_detail' p.pk %}" class="text-sky-700 hover:underline">
+            {{ p.policy_number }}
+          </a>
+        </td>
+        <td class="px-3 py-2">
+          {% if p.status == 'active' %}<span class="inline-flex rounded bg-green-100 text-green-800 px-2 py-0.5 text-xs">Active</span>{% endif %}
+          {% if p.status == 'pending_payment' %}<span class="inline-flex rounded bg-yellow-100 text-yellow-800 px-2 py-0.5 text-xs">Pending</span>{% endif %}
+          {% if p.status == 'draft' %}<span class="inline-flex rounded bg-gray-200 text-gray-800 px-2 py-0.5 text-xs">Draft</span>{% endif %}
+          {% if p.status == 'expired' %}<span class="inline-flex rounded bg-gray-800 text-white px-2 py-0.5 text-xs">Expired</span>{% endif %}
+          {% if p.status == 'cancelled' %}<span class="inline-flex rounded bg-red-100 text-red-800 px-2 py-0.5 text-xs">Cancelled</span>{% endif %}
+        </td>
+        <td class="px-3 py-2">{{ p.start_date|date:"Y-m-d" }}  {{ p.end_date|date:"Y-m-d" }}</td>
         <td class="px-3 py-2">{{ p.premium_amount }}</td>
         <td class="px-3 py-2">{{ p.coverage_amount }}</td>
         <td class="px-3 py-2">{{ p.vehicle.registration_number }}</td>
@@ -58,7 +77,15 @@
   </table>
 </div>
 
-<div class="mt-4 flex items-center gap-2 text-sm">
+<div class="mt-4 flex items-center justify-between text-sm">
+  <div class="text-gray-600">
+    {% if page_obj.paginator.count %}
+      Showing {{ policies|length }} of {{ page_obj.paginator.count }} policies.
+    {% else %}
+      No policies match the current filters.
+    {% endif %}
+  </div>
+  <div class="flex items-center gap-2">
   {% if page_obj.has_previous %}
     <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?page=1&status={{ request.GET.status }}">First</a>
     <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?page={{ page_obj.previous_page_number }}&status={{ request.GET.status }}">Prev</a>
@@ -74,5 +101,6 @@
     <span class="rounded border px-2 py-1 opacity-50 cursor-not-allowed">Next</span>
     <span class="rounded border px-2 py-1 opacity-50 cursor-not-allowed">Last</span>
   {% endif %}
+  </div>
 </div>
 {% endblock %}

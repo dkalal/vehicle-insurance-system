@@ -28,22 +28,26 @@
 </form>
 
 <div class="overflow-x-auto rounded border border-gray-200 bg-white">
-  <table class="min-w-full text-sm">
+  <table class="min-w-full text-sm" aria-label="Insurance policies for this organization">
     <thead class="bg-gray-50 text-left text-gray-600">
       <tr>
-        <th class="px-3 py-2">Policy #</th>
-        <th class="px-3 py-2">Vehicle</th>
-        <th class="px-3 py-2">Customer</th>
-        <th class="px-3 py-2">Period</th>
-        <th class="px-3 py-2">Premium</th>
-        <th class="px-3 py-2">Status</th>
-        <th class="px-3 py-2 text-right">Actions</th>
+        <th scope="col" class="px-3 py-2">Policy #</th>
+        <th scope="col" class="px-3 py-2">Vehicle</th>
+        <th scope="col" class="px-3 py-2">Customer</th>
+        <th scope="col" class="px-3 py-2">Period</th>
+        <th scope="col" class="px-3 py-2">Premium</th>
+        <th scope="col" class="px-3 py-2">Status</th>
+        <th scope="col" class="px-3 py-2 text-right">Actions</th>
       </tr>
     </thead>
     <tbody class="divide-y divide-gray-100">
       {% for p in policies %}
       <tr class="hover:bg-gray-50">
-        <td class="px-3 py-2 font-medium">{{ p.policy_number }}</td>
+        <td class="px-3 py-2 font-medium" scope="row">
+          <a href="{% url 'dashboard:policies_detail' p.pk %}" class="text-sky-700 hover:underline">
+            {{ p.policy_number }}
+          </a>
+        </td>
         <td class="px-3 py-2">{{ p.vehicle.registration_number }} ({{ p.vehicle.make }} {{ p.vehicle.model }})</td>
         <td class="px-3 py-2">
           {% if p.vehicle.owner.customer_type == 'individual' %}
@@ -60,22 +64,36 @@
           {% if p.status == 'draft' %}<span class="inline-flex rounded bg-gray-200 text-gray-800 px-2 py-1 text-xs">Draft</span>{% endif %}
           {% if p.status == 'expired' %}<span class="inline-flex rounded bg-gray-800 text-white px-2 py-1 text-xs">Expired</span>{% endif %}
           {% if p.status == 'cancelled' %}<span class="inline-flex rounded bg-red-100 text-red-800 px-2 py-1 text-xs">Cancelled</span>{% endif %}
+          {% if p.id in expiring_policy_ids %}<span class="inline-flex rounded bg-orange-100 text-orange-800 px-2 py-1 text-xs ml-1">Expiring soon</span>{% endif %}
         </td>
         <td class="px-3 py-2 text-right">
           <a class="inline-flex items-center rounded border border-gray-300 px-2 py-1 hover:bg-gray-50" href="{% url 'dashboard:policies_detail' p.pk %}">View</a>
           <a class="inline-flex items-center rounded border border-sky-600 text-sky-700 hover:bg-sky-50 px-2 py-1" href="{% url 'dashboard:policies_update' p.pk %}">Edit</a>
           <a class="inline-flex items-center rounded bg-green-600 px-2 py-1 text-white hover:bg-green-700" href="{% url 'dashboard:payments_create' %}?policy={{ p.pk }}">Record Payment</a>
+          {% if p.status == 'active' %}
+          <a class="inline-flex items-center rounded border border-emerald-600 text-emerald-700 hover:bg-emerald-50 px-2 py-1 ml-1" href="{% url 'dashboard:policies_renew' p.pk %}">Renew</a>
+          {% endif %}
           {% if p.status != 'cancelled' %}
-          <form method="post" action="{% url 'dashboard:policies_cancel' p.pk %}" class="inline" onsubmit="return confirm('Cancel this policy?');">
-            {% csrf_token %}
-            <input type="hidden" name="reason" value="Cancelled via list" />
-            <button type="submit" class="inline-flex items-center rounded border border-red-600 text-red-700 hover:bg-red-50 px-2 py-1">Cancel</button>
-          </form>
+          <a href="{% url 'dashboard:policies_cancel' p.pk %}"
+             class="inline-flex items-center rounded border border-red-600 text-red-700 hover:bg-red-50 px-2 py-1 ml-1">
+            Cancel
+          </a>
           {% endif %}
         </td>
       </tr>
       {% empty %}
-      <tr><td colspan="7" class="px-3 py-6 text-center text-gray-500">No policies found.</td></tr>
+      <tr>
+        <td colspan="7" class="px-3 py-6 text-center text-gray-500">
+          {% if onboarding_needed %}
+            <div class="space-y-2">
+              <p>No policies yet. Start by registering your first vehicle.</p>
+              <a href="{% url 'dashboard:onboarding_welcome' %}" class="inline-flex items-center rounded bg-sky-600 px-3 py-2 text-sm text-white hover:bg-sky-700">Start onboarding</a>
+            </div>
+          {% else %}
+            No policies found.
+          {% endif %}
+        </td>
+      </tr>
       {% endfor %}
     </tbody>
   </table>
@@ -83,16 +101,16 @@
 
 <div class="mt-4 flex items-center gap-2 text-sm">
   {% if page_obj.has_previous %}
-    <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?page=1">First</a>
-    <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?page={{ page_obj.previous_page_number }}">Prev</a>
+    <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?page=1{% if querystring %}&{{ querystring }}{% endif %}">First</a>
+    <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?page={{ page_obj.previous_page_number }}{% if querystring %}&{{ querystring }}{% endif %}">Prev</a>
   {% else %}
     <span class="rounded border px-2 py-1 opacity-50 cursor-not-allowed">First</span>
     <span class="rounded border px-2 py-1 opacity-50 cursor-not-allowed">Prev</span>
   {% endif %}
   <span class="px-2 py-1">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
   {% if page_obj.has_next %}
-    <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?page={{ page_obj.next_page_number }}">Next</a>
-    <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?page={{ page_obj.paginator.num_pages }}">Last</a>
+    <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?page={{ page_obj.next_page_number }}{% if querystring %}&{{ querystring }}{% endif %}">Next</a>
+    <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?page={{ page_obj.paginator.num_pages }}{% if querystring %}&{{ querystring }}{% endif %}">Last</a>
   {% else %}
     <span class="rounded border px-2 py-1 opacity-50 cursor-not-allowed">Next</span>
     <span class="rounded border px-2 py-1 opacity-50 cursor-not-allowed">Last</span>

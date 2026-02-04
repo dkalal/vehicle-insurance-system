@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-2xl mx-auto bg-white rounded shadow p-6">
+  <h1 class="text-lg font-semibold mb-2">Review Payment</h1>
+  <p class="text-sm text-gray-600 mb-4">Policy {{ policy.policy_number }} • {{ policy.vehicle.registration_number }}</p>
+
+  <div class="mb-4 text-sm text-gray-700 bg-gray-50 rounded p-3 border border-gray-200">
+    <div class="flex justify-between">
+      <span>Amount:</span>
+      <span class="font-medium">{{ payment.amount }}</span>
+    </div>
+    <div class="flex justify-between mt-1">
+      <span>Method:</span>
+      <span>{{ payment.get_payment_method_display }}</span>
+    </div>
+    <div class="flex justify-between mt-1">
+      <span>Reference:</span>
+      <span>{{ payment.reference_number }}</span>
+    </div>
+    <div class="flex justify-between mt-1">
+      <span>Date:</span>
+      <span>{{ payment.payment_date|date:"Y-m-d H:i" }}</span>
+    </div>
+  </div>
+
+  <form method="post" class="space-y-4">
+    {% csrf_token %}
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1" for="id_action">Decision</label>
+      {{ form.action }}
+      {% if form.action.errors %}
+        <p class="mt-1 text-xs text-red-600">{{ form.action.errors|striptags }}</p>
+      {% endif %}
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1" for="id_review_notes">Review notes</label>
+      {{ form.review_notes }}
+      <p class="mt-1 text-xs text-gray-500">Provide a clear reason when rejecting, or internal notes when approving.</p>
+      {% if form.review_notes.errors %}
+        <p class="mt-1 text-xs text-red-600">{{ form.review_notes.errors|striptags }}</p>
+      {% endif %}
+    </div>
+
+    {% if form.non_field_errors %}
+      <div class="rounded border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+        {{ form.non_field_errors }}
+      </div>
+    {% endif %}
+
+    <div class="flex justify-end space-x-3 pt-2">
+      <a href="{% url 'dashboard:policies_detail' policy.pk %}"
+         class="inline-flex items-center rounded border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50">Cancel</a>
+      <button type="submit"
+              class="inline-flex items-center rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+        Save decision
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}

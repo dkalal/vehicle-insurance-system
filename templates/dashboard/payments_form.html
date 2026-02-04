@@ -1,32 +1,109 @@
 {% extends "base.html" %}
 {% block content %}
-<h1 class="text-xl font-semibold mb-4">Record Payment</h1>
+<div class="mb-4">
+  <h1 class="text-xl font-semibold">Record Payment</h1>
+  {% if will_auto_verify_payment %}
+    <p class="mt-1 text-xs text-gray-600">As an admin or manager, saving will verify this payment and activate the policy if valid.</p>
+  {% else %}
+    <p class="mt-1 text-xs text-gray-600">As a staff user, saving will record this payment and mark it pending approval by an admin or manager.</p>
+  {% endif %}
+  <p class="mt-1 text-xs text-gray-600">Amount must match the full premium for the policy. Partial payments are not allowed.</p>
+</div>
+
+{% if form.non_field_errors %}
+  <div class="mb-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+    {{ form.non_field_errors }}
+  </div>
+{% endif %}
+
+{% if selected_policy %}
+  <div class="mb-4 rounded border border-gray-200 bg-gray-50 px-3 py-3 text-sm">
+    <div class="flex items-center justify-between">
+      <div>
+        <div class="font-medium text-gray-800">Policy summary</div>
+        <div class="mt-1 text-gray-700">
+          Policy {{ selected_policy.policy_number }}
+          {% if selected_policy.status == 'active' %}
+            <span class="ml-2 inline-flex rounded bg-green-100 px-2 py-0.5 text-xs text-green-800">Active</span>
+          {% elif selected_policy.status == 'pending_payment' %}
+            <span class="ml-2 inline-flex rounded bg-yellow-100 px-2 py-0.5 text-xs text-yellow-800">Pending payment</span>
+          {% elif selected_policy.status == 'expired' %}
+            <span class="ml-2 inline-flex rounded bg-gray-800 px-2 py-0.5 text-xs text-white">Expired</span>
+          {% elif selected_policy.status == 'cancelled' %}
+            <span class="ml-2 inline-flex rounded bg-red-100 px-2 py-0.5 text-xs text-red-800">Cancelled</span>
+          {% endif %}
+        </div>
+        <div class="mt-1 text-xs text-gray-700">
+          {{ selected_policy.vehicle.registration_number }} – {{ selected_policy.vehicle.make }} {{ selected_policy.vehicle.model }}
+          <span class="ml-1 text-gray-500">
+            {% if selected_policy.vehicle.owner.customer_type == 'individual' %}
+              ({{ selected_policy.vehicle.owner.first_name }} {{ selected_policy.vehicle.owner.last_name }})
+            {% else %}
+              ({{ selected_policy.vehicle.owner.company_name }})
+            {% endif %}
+          </span>
+        </div>
+        <div class="mt-1 text-xs text-gray-700">
+          Period: {{ selected_policy.start_date|date:"Y-m-d" }} → {{ selected_policy.end_date|date:"Y-m-d" }}
+        </div>
+        <div class="mt-1 text-xs text-gray-700">
+          Premium: <span class="font-medium">{{ selected_policy.premium_amount }}</span>
+          {% if selected_policy.coverage_amount %}
+            · Coverage: <span class="font-medium">{{ selected_policy.coverage_amount }}</span>
+          {% endif %}
+        </div>
+      </div>
+      <div class="ml-4">
+        <a href="{% url 'dashboard:policies_detail' selected_policy.pk %}" class="inline-flex items-center rounded border border-gray-300 px-3 py-1 text-xs text-gray-700 hover:bg-gray-50">View policy</a>
+      </div>
+    </div>
+  </div>
+{% endif %}
+
 <form method="post" novalidate class="bg-white rounded shadow p-4">
   {% csrf_token %}
   <div class="grid grid-cols-12 gap-4">
     <div class="col-span-12 md:col-span-6">
       <label class="block text-sm font-medium text-gray-700" for="id_policy">Policy</label>
       {{ form.policy }}
+      {% if form.policy.errors %}
+        <p class="mt-1 text-xs text-red-600">{{ form.policy.errors|striptags }}</p>
+      {% endif %}
     </div>
     <div class="col-span-12 md:col-span-3">
       <label class="block text-sm font-medium text-gray-700" for="id_amount">Amount</label>
       {{ form.amount }}
+      {% if form.amount.errors %}
+        <p class="mt-1 text-xs text-red-600">{{ form.amount.errors|striptags }}</p>
+      {% endif %}
     </div>
     <div class="col-span-12 md:col-span-3">
       <label class="block text-sm font-medium text-gray-700" for="id_payment_method">Method</label>
       {{ form.payment_method }}
+      {% if form.payment_method.errors %}
+        <p class="mt-1 text-xs text-red-600">{{ form.payment_method.errors|striptags }}</p>
+      {% endif %}
     </div>
     <div class="col-span-12 md:col-span-6">
       <label class="block text-sm font-medium text-gray-700" for="id_reference_number">Reference</label>
       {{ form.reference_number }}
+      {% if form.reference_number.errors %}
+        <p class="mt-1 text-xs text-red-600">{{ form.reference_number.errors|striptags }}</p>
+      {% endif %}
     </div>
     <div class="col-span-12 md:col-span-6">
       <label class="block text-sm font-medium text-gray-700" for="id_payer_name">Payer Name</label>
       {{ form.payer_name }}
+      {% if form.payer_name.errors %}
+        <p class="mt-1 text-xs text-red-600">{{ form.payer_name.errors|striptags }}</p>
+      {% endif %}
     </div>
     <div class="col-span-12">
       <label class="block text-sm font-medium text-gray-700" for="id_notes">Notes</label>
       {{ form.notes }}
+      {% if form.notes.errors %}
+        <p class="mt-1 text-xs text-red-600">{{ form.notes.errors|striptags }}</p>
+      {% endif %}
     </div>
   </div>
   <div class="mt-6 flex gap-2">

@@ -22,6 +22,7 @@ class Vehicle(BaseModel):
     - CANNOT have more than ONE active policy at any moment
     - Registration number must be unique per tenant
     - Full history tracked
+    - Compliance status computed from insurance and permits
     """
     
     VEHICLE_TYPE_MOTORCYCLE = 'motorcycle'
@@ -172,6 +173,33 @@ class Vehicle(BaseModel):
             Boolean indicating if new policy can be created.
         """
         return not self.has_active_policy()
+    
+    def get_compliance_status(self, risk_window_days=30):
+        """
+        Get real-time compliance status for this vehicle.
+        
+        Args:
+            risk_window_days: Days before expiry to consider 'at risk'
+            
+        Returns:
+            String: 'compliant', 'at_risk', or 'non_compliant'
+        """
+        from apps.core.services.vehicle_compliance_service import VehicleComplianceService
+        result = VehicleComplianceService.compute_compliance_status(
+            vehicle=self,
+            risk_window_days=risk_window_days
+        )
+        return result['status']
+    
+    def is_compliant(self, risk_window_days=30):
+        """
+        Check if vehicle is fully compliant.
+        
+        Returns:
+            Boolean indicating if vehicle is compliant.
+        """
+        from apps.core.services.vehicle_compliance_service import VehicleComplianceService
+        return self.get_compliance_status(risk_window_days) == VehicleComplianceService.STATUS_COMPLIANT
     
     def transfer_ownership(self, new_owner):
         """

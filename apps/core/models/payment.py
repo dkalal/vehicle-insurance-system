@@ -123,6 +123,21 @@ class Payment(BaseModel):
     
     def __str__(self):
         return f"Payment {self.reference_number} - {self.amount} for {self.policy.policy_number}"
+
+    @property
+    def review_status(self):
+        """Derived review status based on verification flag and notes.
+
+        - "approved" when is_verified is True
+        - "rejected" when notes start with a rejection marker
+        - "pending" otherwise
+        """
+        if self.is_verified:
+            return 'approved'
+        notes = (self.notes or '').strip().upper()
+        if notes.startswith('[REJECTED'):
+            return 'rejected'
+        return 'pending'
     
     def verify(self, verified_by):
         """
@@ -136,10 +151,6 @@ class Payment(BaseModel):
         self.verified_by = verified_by
         self.verified_at = timezone.now()
         self.save(update_fields=['is_verified', 'verified_by', 'verified_at', 'updated_at'])
-        
-        # Check if policy can be activated
-        if self.policy.can_activate()[0]:
-            self.policy.activate()
 
 
 # Register for audit logging
