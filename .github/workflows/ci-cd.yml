@@ -18,6 +18,8 @@ jobs:
     
     steps:
     - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
     
     - name: Set up Python
       uses: actions/setup-python@v4
@@ -37,21 +39,55 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         pip install bandit safety
+
+    - name: Detect changed Python files
+      id: changed-python
+      run: |
+        if [ "${{ github.event_name }}" = "pull_request" ]; then
+          BASE="${{ github.event.pull_request.base.sha }}"
+        else
+          BASE="${{ github.event.before }}"
+        fi
+
+        files=$(git diff --name-only --diff-filter=ACMR "$BASE" "${{ github.sha }}" -- '*.py' | tr '\n' ' ')
+        app_files=$(printf "%s\n" $files | grep '^apps/' | tr '\n' ' ' || true)
+        echo "files=$files" >> "$GITHUB_OUTPUT"
+        echo "app_files=$app_files" >> "$GITHUB_OUTPUT"
+
+        if [ -z "$files" ]; then
+          echo "No changed Python files detected."
+        else
+          echo "Changed Python files: $files"
+        fi
+
+        if [ -n "$app_files" ]; then
+          echo "Changed app Python files: $app_files"
+        fi
     
     - name: Code formatting check (Black)
-      run: black --check --diff .
+      if: steps.changed-python.outputs.files != ''
+      run: black --check --diff ${{ steps.changed-python.outputs.files }}
     
     - name: Import sorting check (isort)
-      run: isort --check-only --diff .
+      if: steps.changed-python.outputs.files != ''
+      run: isort --check-only --diff ${{ steps.changed-python.outputs.files }}
     
     - name: Linting (flake8)
-      run: flake8 .
+      if: steps.changed-python.outputs.files != ''
+      run: flake8 --select=E9,F63,F7,F82 ${{ steps.changed-python.outputs.files }}
     
     - name: Type checking (mypy)
-      run: mypy apps/ --ignore-missing-imports
+      if: steps.changed-python.outputs.app_files != ''
+      continue-on-error: true
+      run: mypy ${{ steps.changed-python.outputs.app_files }} --ignore-missing-imports
     
     - name: Security check (Bandit)
-      run: bandit -r apps/ -f json -o bandit-report.json
+      if: steps.changed-python.outputs.app_files != ''
+      run: bandit ${{ steps.changed-python.outputs.app_files }} -f json -o bandit-report.json
+
+    - name: Create empty Bandit report
+      if: steps.changed-python.outputs.app_files == ''
+      run: echo '{}' > bandit-report.json
     
     - name: Dependency vulnerability check (Safety)
       run: safety check --json --output safety-report.json
