@@ -49,7 +49,7 @@ class VehicleImportServiceTests(TestCase):
 
         self.assertEqual(result.get("created"), 1)
         self.assertEqual(result.get("errors"), [])
-        self.assertEqual(Customer.objects.filter(tenant=self.tenant).count(), 1)
+        self.assertEqual(Customer._base_manager.filter(tenant=self.tenant).count(), 1)
         self.assertEqual(Vehicle.objects.filter(tenant=self.tenant).count(), 1)
         v = Vehicle.objects.get(tenant=self.tenant)
         self.assertEqual(v.registration_number, "T123 ABC")
@@ -105,7 +105,7 @@ class VehicleImportServiceTests(TestCase):
 
         result = vehicle_import_service.import_vehicles_from_csv(
             tenant=self.tenant,
-            user=self.admin,
+            user=self.agent,
             file_obj=f,
         )
 

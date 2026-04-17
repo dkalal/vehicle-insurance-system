@@ -34,6 +34,16 @@ class Vehicle(BaseModel):
         (VEHICLE_TYPE_BAJAJI, 'Bajaji (Three-Wheeler)'),
         (VEHICLE_TYPE_CAR, 'Car'),
     ]
+
+    LIFECYCLE_STATE_ACTIVE = 'active'
+    LIFECYCLE_STATE_INACTIVE = 'inactive'
+    LIFECYCLE_STATE_ARCHIVED = 'archived'
+
+    LIFECYCLE_STATE_CHOICES = [
+        (LIFECYCLE_STATE_ACTIVE, 'Active'),
+        (LIFECYCLE_STATE_INACTIVE, 'Inactive'),
+        (LIFECYCLE_STATE_ARCHIVED, 'Archived'),
+    ]
     
     # Basic Information
     vehicle_type = models.CharField(
@@ -112,6 +122,22 @@ class Vehicle(BaseModel):
     notes = models.TextField(
         blank=True,
         help_text="Additional notes about the vehicle"
+    )
+
+    # Lifecycle intelligence
+    lifecycle_state = models.CharField(
+        max_length=20,
+        choices=LIFECYCLE_STATE_CHOICES,
+        default=LIFECYCLE_STATE_ACTIVE,
+        db_index=True,
+        help_text="Operational lifecycle state for this vehicle"
+    )
+
+    usage_context = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        help_text="Optional context describing how this vehicle is used"
     )
     
     # History Tracking

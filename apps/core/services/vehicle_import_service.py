@@ -34,7 +34,7 @@ def _row_value(row: Dict[str, str], key: str) -> str:
 
 def _find_existing_customer(*, tenant, customer_type: str, id_number: str,
                             company_registration_number: str, email: str) -> Optional[Customer]:
-    qs = Customer.objects.filter(tenant=tenant, deleted_at__isnull=True, customer_type=customer_type)
+    qs = Customer._base_manager.filter(tenant=tenant, deleted_at__isnull=True, customer_type=customer_type)
     if customer_type == Customer.CUSTOMER_TYPE_INDIVIDUAL and id_number:
         return qs.filter(id_number=id_number).first()
     if customer_type == Customer.CUSTOMER_TYPE_COMPANY and company_registration_number:

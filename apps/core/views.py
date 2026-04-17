@@ -1038,6 +1038,7 @@ class VehicleListView(TenantRoleRequiredMixin, ListView):
         qs = (
             Vehicle.objects
             .select_related('owner')
+            .filter(tenant=self.request.tenant, deleted_at__isnull=True)
             .only(
                 'registration_number', 'vehicle_type', 'make', 'model', 'year',
                 'owner__customer_type', 'owner__first_name', 'owner__last_name', 'owner__company_name',
@@ -1168,6 +1169,7 @@ class VehicleExportView(TenantRoleRequiredMixin, View):
         qs = (
             Vehicle.objects
             .select_related('owner')
+            .filter(tenant=request.tenant, deleted_at__isnull=True)
             .only(
                 'registration_number', 'vehicle_type', 'make', 'model', 'year',
                 'owner__customer_type', 'owner__first_name', 'owner__last_name', 'owner__company_name',
@@ -1242,7 +1244,10 @@ class VehicleDetailView(TenantRoleRequiredMixin, DetailView):
     context_object_name = 'vehicle'
 
     def get_queryset(self):
-        qs = Vehicle.objects.select_related('owner')
+        qs = Vehicle.objects.select_related('owner').filter(
+            tenant=self.request.tenant,
+            deleted_at__isnull=True,
+        )
         return vehicle_access_service.filter_vehicle_queryset_for_user(user=self.request.user, queryset=qs)
 
     def get_context_data(self, **kwargs):
@@ -1412,7 +1417,10 @@ class VehicleUpdateView(TenantRoleRequiredMixin, UpdateView):
     success_url = reverse_lazy('dashboard:vehicles_list')
 
     def get_queryset(self):
-        qs = Vehicle.objects.select_related('owner')
+        qs = Vehicle.objects.select_related('owner').filter(
+            tenant=self.request.tenant,
+            deleted_at__isnull=True,
+        )
         return vehicle_access_service.filter_vehicle_queryset_for_user(user=self.request.user, queryset=qs)
 
     def get_form_kwargs(self):
@@ -1509,7 +1517,7 @@ class VehicleSoftDeleteView(TenantRoleRequiredMixin, View):
     allowed_roles = ('admin', 'manager')
 
     def post(self, request, pk):
-        v = get_object_or_404(Vehicle, pk=pk)
+        v = get_object_or_404(Vehicle, pk=pk, tenant=request.tenant, deleted_at__isnull=True)
         vehicle_access_service.ensure_user_can_access_vehicle(user=request.user, vehicle=v)
         vehicle_service.soft_delete_vehicle(deleted_by=request.user, vehicle=v)
         messages.warning(request, 'Vehicle deleted')

@@ -6,6 +6,7 @@ for all time-bound compliance records.
 """
 
 from django.db import transaction
+from django.db.models import Q
 from django.core.exceptions import ValidationError, PermissionDenied
 from django.utils import timezone
 from apps.core.models.policy import Policy
@@ -17,16 +18,16 @@ def _validate_actor_permission(actor, entity):
     if not actor:
         raise PermissionDenied("Actor is required")
     
+    # Super Admin cannot modify business data
+    if getattr(actor, 'is_super_admin', False):
+        raise PermissionDenied("Super Admin cannot modify compliance data")
+    
     if not hasattr(actor, 'tenant_id'):
         raise PermissionDenied("Actor must be a tenant user")
     
     entity_tenant_id = getattr(entity, 'tenant_id', None)
     if actor.tenant_id != entity_tenant_id:
         raise PermissionDenied("Actor must belong to the same tenant")
-    
-    # Super Admin cannot modify business data
-    if getattr(actor, 'is_super_admin', False):
-        raise PermissionDenied("Super Admin cannot modify compliance data")
     
     # Check role permissions
     role = getattr(actor, 'role', None)
@@ -59,11 +60,18 @@ def _check_vehicle_overlap(entity, model_class):
         status='active',
         deleted_at__isnull=True,
     ).exclude(pk=entity.pk)
+
+    start_date = getattr(entity, 'start_date', None)
+    end_date = getattr(entity, 'end_date', None)
+    if start_date:
+        qs = qs.filter(Q(end_date__isnull=True) | Q(end_date__gte=start_date))
+    if end_date:
+        qs = qs.filter(start_date__lte=end_date)
     
     # For policies: no overlap at all
     if model_class == Policy:
         if qs.exists():
-            raise ValidationError("Vehicle already has an active policy")
+            raise ValidationError("Vehicle already has an active policy in this coverage period")
     
     # For permits: check by permit_type
     if model_class == VehiclePermit:
@@ -72,6 +80,10 @@ def _check_vehicle_overlap(entity, model_class):
             same_type = qs.filter(permit_type=permit_type)
             if same_type.exists():
                 raise ValidationError(f"Vehicle already has an active {permit_type.name} permit")
+        else:
+            # If no permit_type, check for any active permit
+            if qs.exists():
+                raise ValidationError("Vehicle already has an active permit")
 
 
 @transaction.atomic
@@ -111,11 +123,18 @@ def activate_entity(entity_id, actor, model_class):
         if not entity.is_fully_paid():
             raise ValidationError("Policy must be fully paid before activation")
     
-    # Check for overlaps
-    _check_vehicle_overlap(entity, model_class)
-    
-    # Activate
+    # Check for overlaps BEFORE setting status to active
+    # Temporarily set status to active for the overlap check
+    original_status = entity.status
     entity.status = 'active'
+    try:
+        _check_vehicle_overlap(entity, model_class)
+    except ValidationError:
+        # Restore original status and re-raise
+        entity.status = original_status
+        raise
+    
+    # If we get here, no overlap - proceed with activation
     entity.activated_at = timezone.now()
     entity.updated_by = actor
     entity.full_clean()
@@ -257,13 +276,20 @@ def is_active_at(entity, check_date):
         return False
     
     from datetime import datetime, time
-    check_dt = datetime.combine(check_date, time.min)
-    check_dt = timezone.make_aware(check_dt)
     
-    if check_dt < start:
+    # Convert check_date to start and end of day
+    check_start = datetime.combine(check_date, time.min)
+    check_end = datetime.combine(check_date, time.max)
+    check_start = timezone.make_aware(check_start)
+    check_end = timezone.make_aware(check_end)
+    
+    # Check if there's any overlap between the active window and the check day
+    # Active window starts before or during the day
+    if start > check_end:
         return False
     
-    if end and check_dt > end:
+    # Active window ends before the day starts
+    if end and end < check_start:
         return False
     
     return True

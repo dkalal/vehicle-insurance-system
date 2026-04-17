@@ -27,6 +27,9 @@ class TenantIsolationTests(TestCase):
             owner=self.c2,
             vehicle_type="car",
             registration_number="T2-XYZ-123",
+            make="Toyota",
+            model="Corolla",
+            year=2020,
         )
 
     def test_list_views_do_not_expose_other_tenant_records(self):

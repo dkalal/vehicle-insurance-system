@@ -11,7 +11,13 @@ from apps.tenants.models import Tenant
             'LOCATION': 'test_local_cache',
             'TIMEOUT': 300,
             'KEY_PREFIX': 'vi_test',
-        }
+        },
+        'sessions': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'test_sessions_cache',
+            'TIMEOUT': 60 * 60 * 8,
+            'KEY_PREFIX': 'sessions',
+        },
     },
     LOGIN_RATE_LIMIT_ATTEMPTS=3,
     LOGIN_RATE_LIMIT_WINDOW_SECONDS=60,

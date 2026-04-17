@@ -35,10 +35,10 @@ class TestPolicyLifecycle:
         assert policy.status == Policy.STATUS_PENDING_PAYMENT
         assert policy.activated_at is None
     
-    def test_cannot_activate_unpaid_policy(self, tenant, user, vehicle):
+    def test_cannot_activate_unpaid_policy(self, tenant, admin_user, vehicle):
         """Policy requires full payment before activation."""
         policy = policy_service.create_policy(
-            created_by=user,
+            created_by=admin_user,
             vehicle=vehicle,
             start_date=date.today(),
             end_date=date.today() + timedelta(days=365),
@@ -46,7 +46,7 @@ class TestPolicyLifecycle:
         )
         
         with pytest.raises(ValidationError, match="fully paid"):
-            lifecycle_service.activate_entity(policy.id, user, Policy)
+            lifecycle_service.activate_entity(policy.id, admin_user, Policy)
     
     def test_policy_activation_sets_timestamp(self, tenant, admin_user, vehicle, payment):
         """Activation sets activated_at timestamp."""
@@ -75,10 +75,14 @@ class TestPolicyLifecycle:
         
         # Make it paid
         from apps.core.models.payment import Payment
+        from django.utils import timezone
         Payment.objects.create(
             tenant=tenant,
             policy=new_policy,
             amount=1000,
+            payment_date=timezone.now(),
+            payment_method=Payment.PAYMENT_METHOD_CASH,
+            reference_number=f"PAY-{new_policy.id}",
             is_verified=True,
             created_by=admin_user,
             updated_by=admin_user
@@ -346,11 +350,28 @@ def super_admin(db):
 @pytest.fixture
 def vehicle(tenant, user):
     from apps.core.models.vehicle import Vehicle
+    from apps.core.models.customer import Customer
+    
+    # Create a customer to own the vehicle
+    customer = Customer.objects.create(
+        tenant=tenant,
+        customer_type=Customer.CUSTOMER_TYPE_INDIVIDUAL,
+        first_name="John",
+        last_name="Doe",
+        phone="123456789",
+        created_by=user,
+        updated_by=user
+    )
+    
     return Vehicle.objects.create(
         tenant=tenant,
+        owner=customer,
         registration_number="ABC123",
         chassis_number="CHASSIS123",
-        vehicle_type=Vehicle.VEHICLE_TYPE_PRIVATE,
+        vehicle_type=Vehicle.VEHICLE_TYPE_CAR,
+        make="Toyota",
+        model="Corolla",
+        year=2020,
         created_by=user,
         updated_by=user
     )
@@ -360,6 +381,7 @@ def vehicle(tenant, user):
 def payment(tenant, user, vehicle):
     """Create a paid policy."""
     from apps.core.models.payment import Payment
+    from django.utils import timezone
     
     policy = policy_service.create_policy(
         created_by=user,
@@ -373,6 +395,9 @@ def payment(tenant, user, vehicle):
         tenant=tenant,
         policy=policy,
         amount=1000,
+        payment_date=timezone.now(),
+        payment_method=Payment.PAYMENT_METHOD_CASH,
+        reference_number="PAY-001",
         is_verified=True,
         created_by=user,
         updated_by=user
@@ -385,6 +410,7 @@ def payment(tenant, user, vehicle):
 def active_policy(tenant, admin_user, vehicle):
     """Create an active policy."""
     from apps.core.models.payment import Payment
+    from django.utils import timezone
     
     policy = policy_service.create_policy(
         created_by=admin_user,
@@ -398,6 +424,9 @@ def active_policy(tenant, admin_user, vehicle):
         tenant=tenant,
         policy=policy,
         amount=1000,
+        payment_date=timezone.now(),
+        payment_method=Payment.PAYMENT_METHOD_CASH,
+        reference_number=f"PAY-{policy.id}",
         is_verified=True,
         created_by=admin_user,
         updated_by=admin_user

@@ -19,7 +19,7 @@ def tenant_context(request):
         'is_super_admin': False,
     }
     
-    if request.user.is_authenticated:
+    if hasattr(request, 'user') and request.user.is_authenticated:
         # Check if Super Admin
         if hasattr(request.user, 'is_super_admin'):
             context['is_super_admin'] = request.user.is_super_admin
