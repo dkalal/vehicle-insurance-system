@@ -14,50 +14,52 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
-from django.contrib import admin
-from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from django.contrib import admin
 from django.shortcuts import redirect
+from django.urls import include, path
+
+from apps.monitoring.views import HealthCheckView
 
 urlpatterns = [
     # Admin interface
-    path('admin/', admin.site.urls),
-    
+    path("admin/", admin.site.urls),
     # Authentication
-    path('accounts/', include(('apps.accounts.urls', 'accounts'), namespace='accounts')),
-    
+    path(
+        "accounts/", include(("apps.accounts.urls", "accounts"), namespace="accounts")
+    ),
     # Main application
-    path('dashboard/', include(('apps.core.urls', 'dashboard'), namespace='dashboard')),
-    
+    path("dashboard/", include(("apps.core.urls", "dashboard"), namespace="dashboard")),
     # Super Admin
-    path('super-admin/', include(('apps.super_admin.urls', 'super_admin'), namespace='super_admin')),
-    
+    path(
+        "super-admin/",
+        include(("apps.super_admin.urls", "super_admin"), namespace="super_admin"),
+    ),
     # API endpoints
-    path('api/', include('apps.api.urls')),
-    
+    path("api/", include("apps.api.urls")),
     # Notifications
-    path('', include('apps.notifications.urls')),
-    
+    path("", include("apps.notifications.urls")),
     # Health monitoring
-    path('health/', include('apps.monitoring.urls')),
-    
+    path("health", HealthCheckView.as_view(), name="health-no-slash"),
+    path("health/", include("apps.monitoring.urls")),
     # Root redirect
-    path('', lambda request: redirect('accounts:login')),
+    path("", lambda request: redirect("accounts:login")),
 ]
 
 # Serve media files in development
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-    
+
     # Debug toolbar
-    if 'debug_toolbar' in settings.INSTALLED_APPS:
+    if "debug_toolbar" in settings.INSTALLED_APPS:
         import debug_toolbar
+
         urlpatterns = [
-            path('__debug__/', include(debug_toolbar.urls)),
+            path("__debug__/", include(debug_toolbar.urls)),
         ] + urlpatterns
 
 # Custom error handlers
-handler404 = 'apps.core.error_handlers.handler404'
-handler500 = 'apps.core.error_handlers.handler500'
-handler403 = 'apps.core.error_handlers.handler403'
+handler404 = "apps.core.error_handlers.handler404"
+handler500 = "apps.core.error_handlers.handler500"
+handler403 = "apps.core.error_handlers.handler403"
