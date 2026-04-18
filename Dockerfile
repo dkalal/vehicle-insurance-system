@@ -5,7 +5,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=off \
     PIP_DISABLE_PIP_VERSION_CHECK=on \
-    PIP_DEFAULT_TIMEOUT=100
+    PIP_DEFAULT_TIMEOUT=100 \
+    DJANGO_SETTINGS_MODULE=config.settings.production \
+    GUNICORN_CMD_ARGS="--access-logfile - --error-logfile - --log-level info"
 
 WORKDIR /app
 
@@ -31,5 +33,5 @@ RUN python manage.py collectstatic --noinput || true
 
 EXPOSE 8000
 
-# Default: run DB migrations, then start gunicorn
-CMD sh -c "python manage.py migrate && gunicorn config.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 3 --timeout 120"
+# Default: run DB migrations, then replace the shell with gunicorn.
+CMD sh -c "python manage.py migrate && exec gunicorn config.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 3 --timeout 120"
