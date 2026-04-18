@@ -98,8 +98,8 @@ class MetricsView(View):
                         * 100
                     )
                     metrics.append(f"cache_hit_rate_percent {hit_rate:.2f}")
-            except:
-                pass
+            except Exception as exc:
+                logger.debug("Cache metrics unavailable: %s", exc)
 
             response_content = "\n".join(metrics) + "\n"
 

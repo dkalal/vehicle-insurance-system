@@ -1,8 +1,12 @@
+import logging
+
 from django.http import HttpResponse
 from django.urls import resolve
 from django.utils.deprecation import MiddlewareMixin
 
 from .models import PlatformConfig
+
+logger = logging.getLogger(__name__)
 
 
 class MaintenanceModeMiddleware(MiddlewareMixin):
@@ -38,8 +42,10 @@ class MaintenanceModeMiddleware(MiddlewareMixin):
             ns = match.namespaces[0] if match.namespaces else ""
             if ns in self.ALLOW_NAMESPACES:
                 return None
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug(
+                "Could not resolve maintenance allowlist path %s: %s", path, exc
+            )
 
         cfg = PlatformConfig.get_solo()
         if not cfg.maintenance_mode:
