@@ -46,6 +46,9 @@ DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="noreply@vehicle-insuranc
 
 # Log to stdout/stderr in containers. Railway captures these logs automatically,
 # while /var/log is not guaranteed to be writable by the app user.
+import copy
+
+LOGGING = copy.deepcopy(LOGGING)
 LOGGING["handlers"].pop("file", None)
 for logger_name in ("django", "apps"):
     LOGGING["loggers"][logger_name]["handlers"] = ["console"]
