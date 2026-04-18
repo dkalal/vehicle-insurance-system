@@ -2,6 +2,8 @@
 Production settings for Vehicle Insurance Information System.
 """
 
+from copy import deepcopy
+
 from .base import *
 
 # SECURITY WARNING: don't run with debug turned on in production!
@@ -46,9 +48,11 @@ DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="noreply@vehicle-insuranc
 
 # Log to stdout/stderr in containers. Railway captures these logs automatically,
 # while /var/log is not guaranteed to be writable by the app user.
+LOGGING = deepcopy(LOGGING)
 LOGGING["handlers"].pop("file", None)
 for logger_name in ("django", "apps"):
     LOGGING["loggers"][logger_name]["handlers"] = ["console"]
+
 
 # Remove debug_toolbar from installed apps (if somehow included)
 INSTALLED_APPS = [app for app in INSTALLED_APPS if app != "debug_toolbar"]
