@@ -11,13 +11,14 @@ ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=[])
 RAILWAY_PUBLIC_DOMAIN = env("RAILWAY_PUBLIC_DOMAIN", default=None)
 if RAILWAY_PUBLIC_DOMAIN and RAILWAY_PUBLIC_DOMAIN not in ALLOWED_HOSTS:
     ALLOWED_HOSTS.append(RAILWAY_PUBLIC_DOMAIN)
+if "healthcheck.railway.app" not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append("healthcheck.railway.app")
 
 # Security settings for production
 SECURE_SSL_REDIRECT = True
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 SECURE_REDIRECT_EXEMPT = [
-    r"^health/?$",
-    r"^health/live/?$",
+    r"^health",
 ]
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
