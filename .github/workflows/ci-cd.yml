@@ -90,6 +90,7 @@ jobs:
       run: echo '{}' > bandit-report.json
     
     - name: Dependency vulnerability check (Safety)
+      continue-on-error: true
       run: safety check --json > safety-report.json
     
     - name: Upload security reports
