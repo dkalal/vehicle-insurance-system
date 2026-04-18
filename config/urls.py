@@ -39,8 +39,8 @@ urlpatterns = [
     # Notifications
     path('', include('apps.notifications.urls')),
     
-    # Health monitoring
-    path('health/', include('apps.monitoring.urls')),
+    # Health monitoring — no trailing slash so Railway's /health probe resolves
+    path('health', include('apps.monitoring.urls')),
     
     # Root redirect
     path('', lambda request: redirect('accounts:login')),

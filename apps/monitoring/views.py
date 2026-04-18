@@ -19,35 +19,53 @@ logger = logging.getLogger(__name__)
 
 class HealthCheckView(View):
     """
-    Comprehensive health check endpoint for monitoring system status.
+    Liveness probe endpoint for deployment health checks.
+    Ultra-lightweight: no external dependencies, always succeeds if the
+    application process is running. Used by Railway as the primary healthcheck.
     """
-    
+
     def get(self, request):
-        """Return system health status."""
+        """Return 200 immediately — confirms the process is alive."""
+        return JsonResponse({
+            'status': 'healthy',
+            'timestamp': timezone.now().isoformat(),
+        }, status=200)
+
+
+class DetailedHealthView(View):
+    """
+    Comprehensive health check endpoint for monitoring dashboards.
+    Performs full diagnostics including DB, cache, system resources, and
+    application-level stats. Not intended for deployment probes.
+    """
+
+    def get(self, request):
+        """Return full system health diagnostics."""
         start_time = time.time()
-        
+
         health_data = {
             'status': 'healthy',
             'timestamp': timezone.now().isoformat(),
             'version': getattr(settings, 'VERSION', '1.0.0'),
             'checks': {}
         }
-        
+
         # Database health check
         try:
+            db_start = time.time()
             with connection.cursor() as cursor:
                 cursor.execute("SELECT 1")
-                health_data['checks']['database'] = {
-                    'status': 'healthy',
-                    'response_time_ms': round((time.time() - start_time) * 1000, 2)
-                }
+            health_data['checks']['database'] = {
+                'status': 'healthy',
+                'response_time_ms': round((time.time() - db_start) * 1000, 2)
+            }
         except Exception as e:
             health_data['checks']['database'] = {
                 'status': 'unhealthy',
                 'error': str(e)
             }
             health_data['status'] = 'unhealthy'
-        
+
         # Cache health check
         try:
             cache_start = time.time()
@@ -66,13 +84,13 @@ class HealthCheckView(View):
                 'error': str(e)
             }
             health_data['status'] = 'unhealthy'
-        
+
         # System resources check
         try:
             memory = psutil.virtual_memory()
             disk = psutil.disk_usage('/')
             cpu_percent = psutil.cpu_percent(interval=1)
-            
+
             health_data['checks']['system'] = {
                 'status': 'healthy',
                 'memory_usage_percent': memory.percent,
@@ -80,45 +98,43 @@ class HealthCheckView(View):
                 'cpu_usage_percent': cpu_percent,
                 'load_average': psutil.getloadavg()[0] if hasattr(psutil, 'getloadavg') else None
             }
-            
-            # Mark as unhealthy if resources are critically low
+
+            # Mark as warning if resources are critically high
             if memory.percent > 90 or (disk.used / disk.total) * 100 > 90 or cpu_percent > 90:
                 health_data['checks']['system']['status'] = 'warning'
-                
+
         except Exception as e:
             health_data['checks']['system'] = {
                 'status': 'unhealthy',
                 'error': str(e)
             }
-        
+
         # Application-specific checks
         try:
             from apps.tenants.models import Tenant
             from apps.accounts.models import User
-            
+
             tenant_count = Tenant.objects.filter(is_active=True).count()
             user_count = User.objects.filter(is_active=True).count()
-            
+
             health_data['checks']['application'] = {
                 'status': 'healthy',
                 'active_tenants': tenant_count,
                 'active_users': user_count,
-                'uptime_seconds': round(time.time() - start_time, 2)
             }
-            
+
         except Exception as e:
             health_data['checks']['application'] = {
                 'status': 'unhealthy',
                 'error': str(e)
             }
             health_data['status'] = 'unhealthy'
-        
+
         # Overall response time
         health_data['response_time_ms'] = round((time.time() - start_time) * 1000, 2)
-        
-        # Set HTTP status based on health
+
         status_code = 200 if health_data['status'] == 'healthy' else 503
-        
+
         return JsonResponse(health_data, status=status_code)
 
 
