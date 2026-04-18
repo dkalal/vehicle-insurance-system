@@ -90,7 +90,7 @@ jobs:
       run: echo '{}' > bandit-report.json
     
     - name: Dependency vulnerability check (Safety)
-      run: safety check --json --output safety-report.json
+      run: safety check --json > safety-report.json
     
     - name: Upload security reports
       uses: actions/upload-artifact@v4
