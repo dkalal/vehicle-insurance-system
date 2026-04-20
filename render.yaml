@@ -7,7 +7,7 @@ services:
       pip install --upgrade pip setuptools wheel
       pip install -r requirements.txt
       python manage.py collectstatic --noinput
-    startCommand: python manage.py migrate --noinput && gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 3 --timeout 120 --max-requests 1000 --max-requests-jitter 100
+    startCommand: python manage.py migrate --noinput && python manage.py seed_demo_accounts && gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 3 --timeout 120 --max-requests 1000 --max-requests-jitter 100
     autoDeployTrigger: commit
     healthCheckPath: /health
     envVars:
@@ -57,6 +57,16 @@ services:
           property: connectionString
       - key: DEFAULT_FROM_EMAIL
         value: noreply@vehicle-insurance.com
+      - key: BOOTSTRAP_DEMO_ACCOUNTS
+        value: "true"
+      - key: DEMO_PLATFORM_USERNAME
+        value: admin
+      - key: DEMO_PLATFORM_PASSWORD
+        value: AdminDemo123!
+      - key: DEMO_TENANT_USERNAME
+        value: demo_admin
+      - key: DEMO_TENANT_PASSWORD
+        value: DemoAdmin123!
 
   - type: keyvalue
     name: vehicle-insurance-redis
