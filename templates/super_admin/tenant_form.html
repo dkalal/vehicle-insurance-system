@@ -26,6 +26,24 @@
     <div class="col-span-12">
       {{ form.settings.label_tag }} {{ form.settings }}
     </div>
+    {% if not form.instance.pk %}
+      <div class="col-span-12 border-t pt-4">
+        <h3 class="text-base font-semibold">First Organization Admin</h3>
+        <p class="mt-1 text-sm text-gray-600">Create the first admin who will manage vehicles, staff, policies, permits, and records for this organization.</p>
+      </div>
+      <div class="col-span-12 md:col-span-4">
+        {{ form.admin_username.label_tag }} {{ form.admin_username }}
+        {{ form.admin_username.errors }}
+      </div>
+      <div class="col-span-12 md:col-span-4">
+        {{ form.admin_email.label_tag }} {{ form.admin_email }}
+        {{ form.admin_email.errors }}
+      </div>
+      <div class="col-span-12 md:col-span-4">
+        {{ form.admin_password.label_tag }} {{ form.admin_password }}
+        {{ form.admin_password.errors }}
+      </div>
+    {% endif %}
   </div>
   <div class="flex gap-2">
     <a class="inline-flex items-center rounded border px-3 py-2 text-sm hover:bg-gray-50" href="{% url 'super_admin:tenants' %}">Cancel</a>

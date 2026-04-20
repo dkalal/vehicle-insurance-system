@@ -66,9 +66,45 @@ class TenantCreateView(SuperAdminRequiredMixin, CreateView):
 
     @transaction.atomic
     def form_valid(self, form):
-        self.object = tenant_services.create_tenant(**form.cleaned_data)
+        data = form.cleaned_data.copy()
+        admin_username = data.pop("admin_username", "")
+        admin_email = data.pop("admin_email", "")
+        admin_password = data.pop("admin_password", "")
+
+        self.object = tenant_services.create_tenant(**data)
+        admin_user = self._create_or_update_tenant_admin(
+            tenant=self.object,
+            username=admin_username,
+            email=admin_email,
+            password=admin_password,
+        )
         messages.success(self.request, f"Tenant '{self.object.name}' created")
+        if admin_user:
+            messages.success(
+                self.request,
+                f"Admin '{admin_user.username}' is ready for '{self.object.name}'",
+            )
         return redirect(self.success_url)
+
+    def _create_or_update_tenant_admin(self, *, tenant, username, email, password):
+        username = (username or "").strip()
+        if not username:
+            return None
+
+        User = get_user_model()
+        user = User.objects.filter(username=username).first() or User(username=username)
+        user.email = (email or "").strip()
+        user.tenant = tenant
+        user.role = User.ROLE_ADMIN
+        user.is_super_admin = False
+        user.is_staff = False
+        user.is_superuser = False
+        user.is_active = True
+        user.must_change_password = False
+        if password:
+            user.set_password(password)
+        user.save()
+        return user
 
 
 class TenantUpdateView(SuperAdminRequiredMixin, UpdateView):
@@ -79,8 +115,13 @@ class TenantUpdateView(SuperAdminRequiredMixin, UpdateView):
 
     @transaction.atomic
     def form_valid(self, form):
+        data = form.cleaned_data.copy()
+        data.pop("admin_username", None)
+        data.pop("admin_email", None)
+        data.pop("admin_password", None)
+
         tenant = form.instance
-        self.object = tenant_services.update_tenant(tenant=tenant, **form.cleaned_data)
+        self.object = tenant_services.update_tenant(tenant=tenant, **data)
         messages.success(self.request, f"Tenant '{self.object.name}' updated")
         return redirect(self.success_url)
 

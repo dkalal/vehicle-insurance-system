@@ -37,6 +37,32 @@ class TenantManagementViewTests(TestCase):
             Tenant.objects.filter(slug="vehicle-operations-demo").exists()
         )
 
+    def test_super_admin_can_create_tenant_with_first_admin(self):
+        self.client.force_login(self.super_admin)
+        response = self.client.post(
+            reverse("super_admin:tenant_create"),
+            {
+                "name": "Logistics Vehicle Authority",
+                "slug": "logistics-vehicle-authority",
+                "domain": "",
+                "contact_email": "logistics@example.com",
+                "contact_phone": "",
+                "is_active": "on",
+                "settings": "{}",
+                "admin_username": "logistics_admin",
+                "admin_email": "admin@logistics.example.com",
+                "admin_password": "VehicleDemo123!",
+            },
+        )
+
+        self.assertRedirects(response, reverse("super_admin:tenants"))
+        tenant = Tenant.objects.get(slug="logistics-vehicle-authority")
+        admin = User.objects.get(username="logistics_admin")
+        self.assertEqual(admin.tenant, tenant)
+        self.assertEqual(admin.role, User.ROLE_ADMIN)
+        self.assertFalse(admin.is_super_admin)
+        self.assertTrue(admin.check_password("VehicleDemo123!"))
+
     def test_super_admin_can_update_tenant(self):
         tenant = Tenant.objects.create(
             name="Old Name",
