@@ -66,9 +66,9 @@ class TenantCreateView(SuperAdminRequiredMixin, CreateView):
 
     @transaction.atomic
     def form_valid(self, form):
-        tenant = tenant_services.create_tenant(**form.cleaned_data)
-        messages.success(self.request, f"Tenant '{tenant.name}' created")
-        return redirect(self.get_success_url())
+        self.object = tenant_services.create_tenant(**form.cleaned_data)
+        messages.success(self.request, f"Tenant '{self.object.name}' created")
+        return redirect(self.success_url)
 
 
 class TenantUpdateView(SuperAdminRequiredMixin, UpdateView):
@@ -80,9 +80,9 @@ class TenantUpdateView(SuperAdminRequiredMixin, UpdateView):
     @transaction.atomic
     def form_valid(self, form):
         tenant = form.instance
-        tenant_services.update_tenant(tenant=tenant, **form.cleaned_data)
-        messages.success(self.request, f"Tenant '{tenant.name}' updated")
-        return redirect(self.get_success_url())
+        self.object = tenant_services.update_tenant(tenant=tenant, **form.cleaned_data)
+        messages.success(self.request, f"Tenant '{self.object.name}' updated")
+        return redirect(self.success_url)
 
 
 class TenantActivateView(SuperAdminRequiredMixin, View):
