@@ -51,6 +51,7 @@
           <td class="px-3 py-2">{{ t.created_at|date:'Y-m-d' }}</td>
           <td class="px-3 py-2 text-right">
             <a class="inline-flex items-center rounded border border-sky-600 text-sky-700 hover:bg-sky-50 px-2 py-1" href="{% url 'super_admin:tenant_update' t.pk %}">Edit</a>
+            <a class="inline-flex items-center rounded border border-sky-600 text-sky-700 hover:bg-sky-50 px-2 py-1" href="{% url 'super_admin:tenant_admin' t.pk %}">Admin</a>
             {% if not t.deleted_at %}
               {% if t.is_active %}
                 <form action="{% url 'super_admin:tenant_deactivate' t.pk %}" method="post" class="inline">{% csrf_token %}

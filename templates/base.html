@@ -836,12 +836,14 @@
       
       // Load notification count on page load
       document.addEventListener('DOMContentLoaded', function() {
-        fetch('/api/notifications/count/')
-          .then(response => response.json())
-          .then(data => {
-            updateNotificationBadge(data.unread_count);
-          })
-          .catch(error => console.error('Error loading notification count:', error));
+        {% if user.is_authenticated and not user.is_super_admin %}
+          fetch('/api/notifications/count/')
+            .then(response => response.json())
+            .then(data => {
+              updateNotificationBadge(data.unread_count);
+            })
+            .catch(error => console.error('Error loading notification count:', error));
+        {% endif %}
       });
       
       // User menu dropdown functionality

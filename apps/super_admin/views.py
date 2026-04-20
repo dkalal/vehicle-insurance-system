@@ -5,7 +5,7 @@ from django.db import transaction, models
 from django.shortcuts import redirect, get_object_or_404
 from django.urls import reverse_lazy
 from django.views import View
-from django.views.generic import TemplateView, ListView, CreateView, UpdateView
+from django.views.generic import TemplateView, ListView, CreateView, UpdateView, FormView
 from django.db.models import Q
 from django.utils.dateparse import parse_date
 
@@ -13,7 +13,7 @@ from auditlog.models import LogEntry
 
 from apps.accounts.permissions import SuperAdminRequiredMixin
 from apps.tenants.models import Tenant
-from .forms import TenantForm, PlatformConfigForm
+from .forms import TenantAdminForm, TenantForm, PlatformConfigForm
 from apps.core.models import SupportRequest
 from apps.tenants import services as tenant_services
 from .models import PlatformConfig
@@ -72,7 +72,7 @@ class TenantCreateView(SuperAdminRequiredMixin, CreateView):
         admin_password = data.pop("admin_password", "")
 
         self.object = tenant_services.create_tenant(**data)
-        admin_user = self._create_or_update_tenant_admin(
+        admin_user = create_or_update_tenant_admin(
             tenant=self.object,
             username=admin_username,
             email=admin_email,
@@ -85,26 +85,6 @@ class TenantCreateView(SuperAdminRequiredMixin, CreateView):
                 f"Admin '{admin_user.username}' is ready for '{self.object.name}'",
             )
         return redirect(self.success_url)
-
-    def _create_or_update_tenant_admin(self, *, tenant, username, email, password):
-        username = (username or "").strip()
-        if not username:
-            return None
-
-        User = get_user_model()
-        user = User.objects.filter(username=username).first() or User(username=username)
-        user.email = (email or "").strip()
-        user.tenant = tenant
-        user.role = User.ROLE_ADMIN
-        user.is_super_admin = False
-        user.is_staff = False
-        user.is_superuser = False
-        user.is_active = True
-        user.must_change_password = False
-        if password:
-            user.set_password(password)
-        user.save()
-        return user
 
 
 class TenantUpdateView(SuperAdminRequiredMixin, UpdateView):
@@ -123,6 +103,88 @@ class TenantUpdateView(SuperAdminRequiredMixin, UpdateView):
         tenant = form.instance
         self.object = tenant_services.update_tenant(tenant=tenant, **data)
         messages.success(self.request, f"Tenant '{self.object.name}' updated")
+        return redirect(self.success_url)
+
+
+def get_primary_tenant_admin(tenant):
+    User = get_user_model()
+    return (
+        User.objects.filter(
+            tenant=tenant,
+            role=User.ROLE_ADMIN,
+            is_super_admin=False,
+        )
+        .order_by("username")
+        .first()
+    )
+
+
+def create_or_update_tenant_admin(*, tenant, username, email, password, is_active=True):
+    username = (username or "").strip()
+    if not username:
+        return None
+
+    User = get_user_model()
+    user = get_primary_tenant_admin(tenant) or User(username=username)
+    user.username = username
+    user.email = (email or "").strip()
+    user.tenant = tenant
+    user.role = User.ROLE_ADMIN
+    user.is_super_admin = False
+    user.is_staff = False
+    user.is_superuser = False
+    user.is_active = bool(is_active)
+    user.must_change_password = False
+    if password:
+        user.set_password(password)
+    user.save()
+    return user
+
+
+class TenantAdminManageView(SuperAdminRequiredMixin, FormView):
+    form_class = TenantAdminForm
+    template_name = "super_admin/tenant_admin_form.html"
+    success_url = reverse_lazy("super_admin:tenants")
+
+    def dispatch(self, request, *args, **kwargs):
+        self.tenant = get_object_or_404(Tenant, pk=kwargs.get("pk"))
+        self.admin_user = get_primary_tenant_admin(self.tenant)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_initial(self):
+        if not self.admin_user:
+            return {"is_active": True}
+        return {
+            "username": self.admin_user.username,
+            "email": self.admin_user.email,
+            "is_active": self.admin_user.is_active,
+        }
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["tenant"] = self.tenant
+        kwargs["admin_user"] = self.admin_user
+        return kwargs
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["tenant"] = self.tenant
+        ctx["admin_user"] = self.admin_user
+        return ctx
+
+    @transaction.atomic
+    def form_valid(self, form):
+        admin_user = create_or_update_tenant_admin(
+            tenant=self.tenant,
+            username=form.cleaned_data["username"],
+            email=form.cleaned_data.get("email", ""),
+            password=form.cleaned_data.get("password", ""),
+            is_active=form.cleaned_data.get("is_active", True),
+        )
+        messages.success(
+            self.request,
+            f"Admin '{admin_user.username}' is ready for '{self.tenant.name}'",
+        )
         return redirect(self.success_url)
 
 

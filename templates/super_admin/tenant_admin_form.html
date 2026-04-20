@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2 class="text-xl font-semibold mb-4">Organization Admin</h2>
+<div class="bg-white rounded shadow p-4 space-y-4">
+  <div>
+    <p class="text-sm text-gray-600">Organization</p>
+    <p class="font-medium">{{ tenant.name }}</p>
+  </div>
+
+  <form method="post" class="space-y-4">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    <div class="grid grid-cols-12 gap-4">
+      <div class="col-span-12 md:col-span-4">
+        {{ form.username.label_tag }} {{ form.username }}
+        {{ form.username.errors }}
+      </div>
+      <div class="col-span-12 md:col-span-4">
+        {{ form.email.label_tag }} {{ form.email }}
+        {{ form.email.errors }}
+      </div>
+      <div class="col-span-12 md:col-span-4">
+        {{ form.password.label_tag }} {{ form.password }}
+        {{ form.password.errors }}
+        <p class="mt-1 text-xs text-gray-600">{{ form.password.help_text }}</p>
+      </div>
+      <div class="col-span-12 flex items-center gap-2">
+        {{ form.is_active }} {{ form.is_active.label_tag }}
+        {{ form.is_active.errors }}
+      </div>
+    </div>
+
+    <div class="flex gap-2">
+      <a class="inline-flex items-center rounded border px-3 py-2 text-sm hover:bg-gray-50" href="{% url 'super_admin:tenants' %}">Cancel</a>
+      <button class="inline-flex items-center rounded bg-sky-600 px-4 py-2 text-white hover:bg-sky-700" type="submit">Save Admin</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

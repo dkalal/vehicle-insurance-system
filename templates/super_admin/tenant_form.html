@@ -7,24 +7,31 @@
   <div class="grid grid-cols-12 gap-4">
     <div class="col-span-12 md:col-span-6">
       {{ form.name.label_tag }} {{ form.name }}
+      {{ form.name.errors }}
     </div>
     <div class="col-span-12 md:col-span-6">
       {{ form.slug.label_tag }} {{ form.slug }}
+      {{ form.slug.errors }}
     </div>
     <div class="col-span-12 md:col-span-6">
       {{ form.domain.label_tag }} {{ form.domain }}
+      {{ form.domain.errors }}
     </div>
     <div class="col-span-12 md:col-span-6">
       {{ form.contact_email.label_tag }} {{ form.contact_email }}
+      {{ form.contact_email.errors }}
     </div>
     <div class="col-span-12 md:col-span-6">
       {{ form.contact_phone.label_tag }} {{ form.contact_phone }}
+      {{ form.contact_phone.errors }}
     </div>
     <div class="col-span-12 md:col-span-6 flex items-center gap-2">
       {{ form.is_active }} {{ form.is_active.label_tag }}
+      {{ form.is_active.errors }}
     </div>
     <div class="col-span-12">
       {{ form.settings.label_tag }} {{ form.settings }}
+      {{ form.settings.errors }}
     </div>
     {% if not form.instance.pk %}
       <div class="col-span-12 border-t pt-4">

@@ -104,6 +104,11 @@ class NotificationMarkReadAPIView(TenantUserRequiredMixin, View):
 @method_decorator([login_required], name='dispatch')
 class NotificationCountAPIView(TenantUserRequiredMixin, View):
     """API endpoint for getting unread notification count."""
+
+    def dispatch(self, request, *args, **kwargs):
+        if getattr(request.user, "is_super_admin", False):
+            return JsonResponse({"unread_count": 0})
+        return super().dispatch(request, *args, **kwargs)
     
     def get(self, request):
         count = NotificationService.get_unread_count(
