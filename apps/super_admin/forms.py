@@ -1,5 +1,6 @@
 from django import forms
 from django.contrib.auth import get_user_model
+from django.utils.text import slugify
 
 from apps.tenants.models import Tenant
 from .models import PlatformConfig
@@ -33,9 +34,28 @@ class TenantForm(forms.ModelForm):
             'settings': forms.Textarea(attrs={'rows': 4}),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["slug"].required = False
+        self.fields["domain"].required = False
+        self.fields["settings"].required = False
+        self.fields["settings"].initial = self.fields["settings"].initial or {}
+        self.fields["settings"].help_text = (
+            "Optional JSON settings. Leave blank to use default settings."
+        )
+
     def clean_slug(self):
-        slug = self.cleaned_data.get('slug')
-        return (slug or '').lower()
+        slug = (self.cleaned_data.get('slug') or '').strip().lower()
+        if slug:
+            return slug
+        return slugify(self.cleaned_data.get("name") or "")
+
+    def clean_domain(self):
+        return (self.cleaned_data.get("domain") or "").strip() or None
+
+    def clean_settings(self):
+        settings = self.cleaned_data.get("settings")
+        return settings or {}
 
     def clean(self):
         cleaned = super().clean()

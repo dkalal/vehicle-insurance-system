@@ -37,6 +37,25 @@ class TenantManagementViewTests(TestCase):
             Tenant.objects.filter(slug="vehicle-operations-demo").exists()
         )
 
+    def test_super_admin_can_create_tenant_with_blank_slug_and_settings(self):
+        self.client.force_login(self.super_admin)
+        response = self.client.post(
+            reverse("super_admin:tenant_create"),
+            {
+                "name": "Vehicle Registry Board",
+                "slug": "",
+                "domain": "",
+                "contact_email": "registry@example.com",
+                "contact_phone": "",
+                "is_active": "on",
+                "settings": "",
+            },
+        )
+
+        self.assertRedirects(response, reverse("super_admin:tenants"))
+        tenant = Tenant.objects.get(slug="vehicle-registry-board")
+        self.assertEqual(tenant.settings, {})
+
     def test_super_admin_can_create_tenant_with_first_admin(self):
         self.client.force_login(self.super_admin)
         response = self.client.post(

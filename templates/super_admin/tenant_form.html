@@ -3,6 +3,12 @@
 <h2 class="text-xl font-semibold mb-4">{% if form.instance.pk %}Edit Tenant{% else %}New Tenant{% endif %}</h2>
 <form method="post" class="bg-white rounded shadow p-4 space-y-4">
   {% csrf_token %}
+  {% if form.errors %}
+    <div class="rounded border border-red-300 bg-red-50 p-3 text-sm text-red-800">
+      <p class="font-semibold">Tenant was not saved.</p>
+      <p>Please fix the highlighted fields below and try again.</p>
+    </div>
+  {% endif %}
   {{ form.non_field_errors }}
   <div class="grid grid-cols-12 gap-4">
     <div class="col-span-12 md:col-span-6">
@@ -32,6 +38,7 @@
     <div class="col-span-12">
       {{ form.settings.label_tag }} {{ form.settings }}
       {{ form.settings.errors }}
+      <p class="mt-1 text-xs text-gray-600">{{ form.settings.help_text }}</p>
     </div>
     {% if not form.instance.pk %}
       <div class="col-span-12 border-t pt-4">

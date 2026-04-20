@@ -20,6 +20,11 @@ from .models import PlatformConfig
 from apps.accounts.services import password_reset_service
 from . import services as super_admin_services
 
+import logging
+
+
+logger = logging.getLogger(__name__)
+
 
 class SuperAdminHomeView(SuperAdminRequiredMixin, TemplateView):
     template_name = 'super_admin/home.html'
@@ -64,6 +69,14 @@ class TenantCreateView(SuperAdminRequiredMixin, CreateView):
     template_name = 'super_admin/tenant_form.html'
     success_url = reverse_lazy('super_admin:tenants')
 
+    def form_invalid(self, form):
+        logger.warning("Tenant create form invalid: %s", form.errors.as_json())
+        messages.error(
+            self.request,
+            "Tenant was not saved. Please review the highlighted fields below.",
+        )
+        return super().form_invalid(form)
+
     @transaction.atomic
     def form_valid(self, form):
         data = form.cleaned_data.copy()
@@ -92,6 +105,14 @@ class TenantUpdateView(SuperAdminRequiredMixin, UpdateView):
     form_class = TenantForm
     template_name = 'super_admin/tenant_form.html'
     success_url = reverse_lazy('super_admin:tenants')
+
+    def form_invalid(self, form):
+        logger.warning("Tenant update form invalid: %s", form.errors.as_json())
+        messages.error(
+            self.request,
+            "Tenant was not saved. Please review the highlighted fields below.",
+        )
+        return super().form_invalid(form)
 
     @transaction.atomic
     def form_valid(self, form):
@@ -145,6 +166,18 @@ class TenantAdminManageView(SuperAdminRequiredMixin, FormView):
     form_class = TenantAdminForm
     template_name = "super_admin/tenant_admin_form.html"
     success_url = reverse_lazy("super_admin:tenants")
+
+    def form_invalid(self, form):
+        logger.warning(
+            "Tenant admin form invalid for tenant %s: %s",
+            getattr(self, "tenant", None),
+            form.errors.as_json(),
+        )
+        messages.error(
+            self.request,
+            "Admin was not saved. Please review the highlighted fields below.",
+        )
+        return super().form_invalid(form)
 
     def dispatch(self, request, *args, **kwargs):
         self.tenant = get_object_or_404(Tenant, pk=kwargs.get("pk"))
