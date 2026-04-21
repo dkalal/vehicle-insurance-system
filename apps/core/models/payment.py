@@ -4,6 +4,8 @@ Payment model for the Vehicle Insurance system.
 Represents payments made for insurance policies.
 """
 
+import re
+
 from django.db import models
 from simple_history.models import HistoricalRecords
 from auditlog.registry import auditlog
@@ -102,6 +104,9 @@ class Payment(BaseModel):
     
     # History Tracking
     history = HistoricalRecords()
+
+    REJECTED_REVIEW_MARKER_RE = re.compile(r'^\[REJECTED[^\]]*\]\s*(.*)$', re.IGNORECASE)
+    APPROVED_REVIEW_MARKER_RE = re.compile(r'^\[REVIEW APPROVED[^\]]*\]\s*(.*)$', re.IGNORECASE)
     
     class Meta:
         verbose_name = 'Payment'
@@ -129,15 +134,49 @@ class Payment(BaseModel):
         """Derived review status based on verification flag and notes.
 
         - "approved" when is_verified is True
-        - "rejected" when notes start with a rejection marker
+        - "rejected" when notes contain a rejection marker
         - "pending" otherwise
         """
         if self.is_verified:
             return 'approved'
-        notes = (self.notes or '').strip().upper()
-        if notes.startswith('[REJECTED'):
+        if self.rejection_reason:
             return 'rejected'
         return 'pending'
+
+    def _extract_latest_review_note(self, marker_re):
+        """Return the latest review note stored under a review marker."""
+        lines = (self.notes or '').splitlines()
+        marker_index = None
+        marker_match = None
+
+        for index, line in enumerate(lines):
+            match = marker_re.match(line.strip())
+            if match:
+                marker_index = index
+                marker_match = match
+
+        if marker_index is None or marker_match is None:
+            return ''
+
+        extracted_lines = []
+        first_line = (marker_match.group(1) or '').strip()
+        if first_line:
+            extracted_lines.append(first_line)
+
+        for line in lines[marker_index + 1:]:
+            extracted_lines.append(line.rstrip())
+
+        return '\n'.join(extracted_lines).strip()
+
+    @property
+    def rejection_reason(self):
+        """Return the stored rejection reason, if the payment was rejected."""
+        return self._extract_latest_review_note(self.REJECTED_REVIEW_MARKER_RE)
+
+    @property
+    def approval_note(self):
+        """Return the latest approval note, if one was recorded."""
+        return self._extract_latest_review_note(self.APPROVED_REVIEW_MARKER_RE)
     
     def verify(self, verified_by):
         """
