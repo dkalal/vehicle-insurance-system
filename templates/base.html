@@ -12,7 +12,7 @@
     
     <!-- Modern CSS Framework -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
     <!-- Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/heroicons@2.0.18/24/outline/style.css">
@@ -22,7 +22,7 @@
         theme: {
           extend: {
             fontFamily: {
-              'sans': ['Inter', 'system-ui', 'sans-serif'],
+              'sans': ['Manrope', 'system-ui', 'sans-serif'],
             },
             colors: {
               brand: {
@@ -106,85 +106,259 @@
       }
       
       /* Navigation Styles */
+      .nav-link,
+      .utility-button,
+      .quick-action-button,
+      .icon-button,
+      .dropdown-item,
+      .mobile-nav-link {
+        transition:
+          transform 0.2s ease,
+          background-color 0.2s ease,
+          color 0.2s ease,
+          border-color 0.2s ease,
+          box-shadow 0.2s ease;
+      }
+
       .nav-link {
-        @apply flex items-center space-x-2 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50/80 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 group;
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid transparent;
+        border-radius: 0.75rem;
+        background: transparent;
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #64748b;
+        text-decoration: none;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0);
+      }
+
+      .nav-link:focus-visible,
+      .utility-button:focus-visible,
+      .quick-action-button:focus-visible,
+      .icon-button:focus-visible,
+      .dropdown-item:focus-visible,
+      .mobile-nav-link:focus-visible {
+        outline: 2px solid #3b82f6;
+        outline-offset: 2px;
       }
 
       .nav-link-active {
-        @apply text-blue-600 bg-blue-50/80 hover:bg-blue-100/80 hover:text-blue-700 shadow-sm;
+        border-color: rgba(203, 213, 225, 0.8);
+        background: #ffffff;
+        color: #0f172a;
+        box-shadow: 0 10px 20px -18px rgba(15, 23, 42, 0.55);
       }
 
-      .nav-link svg {
-        @apply transition-transform duration-200;
+      .nav-link:hover {
+        transform: translateY(-4px);
+        border-color: #bfdbfe;
+        background: #eff6ff;
+        color: #1d4ed8;
+        box-shadow: 0 18px 28px -20px rgba(59, 130, 246, 0.7);
       }
 
-      .nav-link:hover svg {
-        @apply scale-110;
+      .nav-link:active {
+        transform: translateY(0) scale(0.98);
+      }
+
+      .utility-button {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.75rem;
+        background: #ffffff;
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #475569;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+      }
+
+      .utility-button:hover {
+        transform: translateY(-4px);
+        border-color: #bfdbfe;
+        background: #eff6ff;
+        color: #1d4ed8;
+        box-shadow: 0 18px 28px -20px rgba(59, 130, 246, 0.7);
+      }
+
+      .quick-action-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid #0f172a;
+        border-radius: 0.75rem;
+        background: #0f172a;
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #ffffff;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.15);
+      }
+
+      .quick-action-button:hover {
+        transform: translateY(-4px);
+        border-color: #93c5fd;
+        background: #2563eb;
+        color: #ffffff;
+        box-shadow: 0 18px 28px -20px rgba(59, 130, 246, 0.75);
+      }
+
+      .icon-button {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.5rem;
+        height: 2.5rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.75rem;
+        background: #ffffff;
+        color: #475569;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+      }
+
+      .icon-button:hover {
+        transform: translateY(-4px) scale(1.03);
+        border-color: #bfdbfe;
+        background: #eff6ff;
+        color: #1d4ed8;
+        box-shadow: 0 18px 28px -20px rgba(59, 130, 246, 0.7);
+      }
+
+      .notification-badge {
+        position: absolute;
+        top: -0.25rem;
+        right: -0.25rem;
+        display: inline-flex;
+        min-width: 1.25rem;
+        min-height: 1.25rem;
+        align-items: center;
+        justify-content: center;
+        padding: 0 0.25rem;
+        border: 2px solid #ffffff;
+        border-radius: 9999px;
+        font-size: 10px;
+        font-weight: 700;
+        line-height: 1;
+        color: #ffffff;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.2);
+      }
+
+      .notification-badge-low { background: #64748b; }
+      .notification-badge-medium { background: #2563eb; }
+      .notification-badge-high { background: #f59e0b; }
+      .notification-badge-critical { background: #e11d48; }
+
+      .notification-bell-ring {
+        animation: bellRing 0.6s ease-in-out 1;
+      }
+
+      @keyframes bellRing {
+        0%, 100% { transform: rotate(0deg); }
+        20% { transform: rotate(12deg); }
+        40% { transform: rotate(-10deg); }
+        60% { transform: rotate(7deg); }
+        80% { transform: rotate(-4deg); }
+      }
+
+      .topbar-surface {
+        background:
+          radial-gradient(circle at top left, rgba(37, 99, 235, 0.10), transparent 28%),
+          linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.88));
       }
 
       .dropdown-item {
-        @apply flex items-center space-x-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-all duration-150 focus:outline-none focus:bg-gray-50 rounded-lg mx-2;
+        display: block;
+        border-radius: 0.5rem;
+        padding: 0.75rem 1rem;
+        font-size: 0.875rem;
+        color: #374151;
+        text-decoration: none;
+      }
+
+      .dropdown-item:hover,
+      .dropdown-item:focus-visible {
+        transform: translateX(4px);
+        background: #eff6ff;
+        color: #1d4ed8;
       }
 
       .mobile-nav-link {
-        @apply flex items-center px-4 py-3 rounded-xl text-base font-medium text-gray-600 hover:text-gray-900 hover:bg-white/80 transition-all duration-200 backdrop-blur-sm;
+        display: block;
+        border-radius: 0.75rem;
+        padding: 0.75rem 1rem;
+        font-size: 1rem;
+        font-weight: 500;
+        color: #4b5563;
+        text-decoration: none;
+      }
+
+      .mobile-nav-link:hover,
+      .mobile-nav-link:focus-visible {
+        transform: translateX(4px);
+        background: #eff6ff;
+        color: #1d4ed8;
       }
 
       .mobile-nav-link-active {
-        @apply text-blue-600 bg-white/90 shadow-sm;
+        background: rgba(255, 255, 255, 0.9);
+        color: #2563eb;
+        box-shadow: 0 10px 20px -18px rgba(15, 23, 42, 0.55);
       }
     </style>
     
     {% block extra_head %}{% endblock %}
   </head>
   
-  <body class="h-full bg-gray-50 font-sans antialiased">
+  <body class="h-full bg-slate-50 font-sans antialiased text-slate-900">
     <!-- Skip to main content for accessibility -->
     <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-brand-600 text-white px-4 py-2 rounded-lg z-50">
       Skip to main content
     </a>
     
     <!-- Header -->
-    <header class="bg-white/95 backdrop-blur-sm shadow-lg border-b border-gray-200/50 sticky top-0 z-50" role="banner">
+    <header class="topbar-surface sticky top-0 z-50 border-b border-slate-200/70 shadow-[0_18px_40px_-32px_rgba(15,23,42,0.5)] backdrop-blur-xl" role="banner">
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div class="flex h-16 items-center justify-between">
+        <div class="flex min-h-[4.75rem] items-center justify-between gap-4 py-3">
           
           <!-- Logo and Brand -->
           <div class="flex items-center">
             <a href="{% if user.is_authenticated and not is_super_admin %}{% url 'dashboard:home' %}{% elif user.is_authenticated and is_super_admin %}{% url 'super_admin:home' %}{% else %}#{% endif %}" 
-               class="group flex items-center space-x-3 text-xl font-semibold text-gray-900 hover:text-blue-600 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-xl px-3 py-2"
+               class="group flex items-center gap-3 rounded-2xl border border-white/70 bg-white/70 px-3 py-2 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
                aria-label="Vehicle Management System Dashboard">
               <div class="relative">
-                <div class="w-10 h-10 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-700 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl group-hover:scale-105 transition-all duration-200">
+                <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-600 via-brand-700 to-slate-900 shadow-lg shadow-brand-500/25 transition-all duration-200 group-hover:scale-105 group-hover:shadow-xl">
                   <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.22.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
                   </svg>
                 </div>
-                <div class="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-white animate-pulse"></div>
+                <div class="absolute -right-1 -top-1 h-3 w-3 rounded-full border-2 border-white bg-emerald-400 animate-pulse"></div>
               </div>
               <div class="flex flex-col">
-                <span class="text-gray-900 font-bold tracking-tight">VehicleHub</span>
+                <span class="text-lg font-extrabold tracking-tight text-slate-950">VehicleHub</span>
                 {% if current_tenant and not is_super_admin %}
-                <span class="text-xs text-gray-500 font-medium bg-gray-100 px-2 py-0.5 rounded-full">{{ current_tenant.name }}</span>
+                <span class="inline-flex max-w-[16rem] truncate rounded-full border border-slate-200 bg-slate-100 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">{{ current_tenant.name }}</span>
                 {% endif %}
               </div>
             </a>
           </div>
 
           <!-- Desktop Navigation -->
-          <nav class="hidden lg:flex items-center" role="navigation" aria-label="Main navigation">
+          <nav class="hidden lg:flex flex-1 items-center justify-center" role="navigation" aria-label="Main navigation">
             {% if user.is_authenticated and not is_super_admin %}
               {% with current_url=request.resolver_match.url_name %}
-              <ul class="flex items-center space-x-1">
+              <ul class="flex items-center gap-6">
                 <!-- Core operations -->
                 <li>
                   <a href="{% url 'dashboard:home' %}" 
                      class="nav-link {% if current_url == 'home' %}nav-link-active{% endif %}"
                      aria-current="{% if current_url == 'home' %}page{% endif %}">
-                    <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                      <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/>
-                    </svg>
-                    <span class="truncate">Dashboard</span>
+                    Dashboard
                   </a>
                 </li>
 
@@ -192,10 +366,7 @@
                   <a href="{% url 'dashboard:customers_list' %}" 
                      class="nav-link {% if 'customer' in current_url %}nav-link-active{% endif %}"
                      aria-current="{% if 'customer' in current_url %}page{% endif %}">
-                    <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                      <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/>
-                    </svg>
-                    <span class="truncate">Customers</span>
+                    Customers
                   </a>
                 </li>
 
@@ -203,10 +374,7 @@
                   <a href="{% url 'dashboard:vehicles_list' %}" 
                      class="nav-link {% if 'vehicle' in current_url %}nav-link-active{% endif %}"
                      aria-current="{% if 'vehicle' in current_url %}page{% endif %}">
-                    <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                      <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.22.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99z"/>
-                    </svg>
-                    <span class="truncate">Vehicles</span>
+                    Vehicles
                   </a>
                 </li>
 
@@ -214,35 +382,25 @@
                   <a href="{% url 'dashboard:policies_list' %}" 
                      class="nav-link {% if 'polic' in current_url %}nav-link-active{% endif %}"
                      aria-current="{% if 'polic' in current_url %}page{% endif %}">
-                    <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                      <path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm0 2h12v8H4V6z" clip-rule="evenodd"/>
-                    </svg>
-                    <span class="truncate">Policies</span>
+                    Policies
                   </a>
                 </li>
 
                 <li>
-                  <a href="{% url 'dashboard:policies_report' %}" 
+                  <a href="{% url 'dashboard:reports_home' %}" 
                      class="nav-link {% if 'report' in current_url %}nav-link-active{% endif %}"
                      aria-current="{% if 'report' in current_url %}page{% endif %}">
-                    <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                      <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/>
-                    </svg>
-                    <span class="truncate">Reports</span>
+                    Reports
                   </a>
                 </li>
 
                 {% if user.role == 'admin' or user.role == 'manager' %}
                 <!-- Configuration & team -->
-                <li class="ml-2 pl-2 border-l border-gray-200">
+                <li class="border-l border-slate-200 pl-6">
                   <a href="{% url 'dashboard:permit_types_list' %}" 
                      class="nav-link {% if 'permit_types' in current_url %}nav-link-active{% endif %}"
                      aria-current="{% if 'permit_types' in current_url %}page{% endif %}">
-                    <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                      <path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h5a1 1 0 000-2H4V5h12v3a1 1 0 102 0V5a2 2 0 00-2-2H4z"/>
-                      <path d="M14 11a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1v-1z"/>
-                    </svg>
-                    <span class="truncate">Permit Types</span>
+                    Permit Types
                   </a>
                 </li>
 
@@ -250,10 +408,7 @@
                   <a href="{% url 'dashboard:staff_list' %}" 
                      class="nav-link {% if 'staff' in current_url %}nav-link-active{% endif %}"
                      aria-current="{% if 'staff' in current_url %}page{% endif %}">
-                    <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                      <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"/>
-                    </svg>
-                    <span class="truncate">Staff</span>
+                    Staff
                   </a>
                 </li>
                 {% endif %}
@@ -263,27 +418,24 @@
 
             {% if user.is_authenticated and is_super_admin %}
               <a href="{% url 'super_admin:home' %}" class="nav-link nav-link-active">
-                <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                  <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/>
-                </svg>
-                <span class="truncate">Platform Admin</span>
+                Platform Admin
               </a>
             {% endif %}
           </nav>
 
           <!-- Right Side Actions -->
-          <div class="flex items-center space-x-3">
+          <div class="flex items-center gap-3">
             {% if user.is_authenticated %}
               
               <!-- Quick Actions -->
-              <div class="hidden md:flex items-center space-x-2">
+              <div class="hidden md:flex items-center gap-3">
                 {% if not is_super_admin %}
                 <a href="{% url 'dashboard:vehicles_create' %}" 
-                   class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                  <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                   class="icon-button"
+                   aria-label="Add vehicle">
+                  <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
                     <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 01-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/>
                   </svg>
-                  Add Vehicle
                 </a>
                 {% endif %}
               </div>
@@ -291,13 +443,14 @@
               <!-- Notifications -->
               <div class="relative">
                 <button type="button" 
-                        class="relative p-2.5 text-gray-400 hover:text-gray-600 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-xl transition-all duration-150"
+                        class="icon-button"
+                        id="notification-button"
                         aria-label="View notifications"
                         onclick="toggleNotifications()">
-                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                  <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
                     <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"/>
                   </svg>
-                  <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full animate-pulse" id="notification-badge" style="display: none;"></span>
+                  <span class="notification-badge notification-badge-medium hidden" id="notification-badge" aria-live="polite">0</span>
                 </button>
                 
                 <!-- Notifications Dropdown -->
@@ -329,26 +482,18 @@
               <!-- User Menu -->
               <div class="relative">
                 <button type="button" 
-                        class="flex items-center space-x-3 text-sm text-gray-700 hover:text-gray-900 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-xl px-3 py-2 transition-all duration-150"
+                        class="flex items-center rounded-full border border-slate-200 bg-white p-1.5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
                         id="user-menu-button" 
                         aria-expanded="false" 
                         aria-haspopup="true"
+                        aria-label="Open profile menu"
                         onclick="toggleUserMenu()">
-                  <div class="relative">
-                    <div class="w-9 h-9 bg-gradient-to-br from-blue-100 via-blue-200 to-indigo-200 rounded-xl flex items-center justify-center shadow-sm">
-                      <span class="text-blue-700 font-semibold text-sm">
-                        {{ user.first_name|first|default:user.username|first|upper }}
-                      </span>
-                    </div>
-                    <div class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-400 rounded-full border-2 border-white"></div>
-                  </div>
-                  <div class="hidden sm:block text-left">
-                    <div class="font-semibold text-gray-900">{{ user.get_full_name|default:user.username }}</div>
-                    <div class="text-xs text-gray-500 font-medium">{{ user.get_role_display|default:user.role|title }}</div>
-                  </div>
-                  <svg class="w-4 h-4 text-gray-400 transition-transform duration-150" id="user-menu-arrow" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
-                  </svg>
+                  <span class="relative">
+                    <span class="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-brand-100 via-brand-200 to-slate-200 text-sm font-bold text-brand-700">
+                      {{ user.first_name|first|default:user.username|first|upper }}
+                    </span>
+                    <span class="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white bg-emerald-400"></span>
+                  </span>
                 </button>
 
                 <!-- Dropdown Menu -->
@@ -363,42 +508,27 @@
                       <p class="text-xs text-gray-500">{{ user.email }}</p>
                       {% if is_super_admin %}
                         <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 mt-2">
-                          <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M9.504 1.132a1 1 0 01.992 0l1.75 1a1 1 0 11-.992 1.736L10 3.152l-1.254.716a1 1 0 11-.992-1.736l1.75-1zM5.618 4.504a1 1 0 01-.372 1.364L5.016 6l.23.132a1 1 0 11-.992 1.736L3 7.723V8a1 1 0 01-2 0V6a.996.996 0 01.52-.878l1.734-.99a1 1 0 011.364.372zm8.764 0a1 1 0 011.364-.372l1.734.99A.996.996 0 0118 6v2a1 1 0 11-2 0v-.277l-1.254-.145a1 1 0 11-.992-1.736L14.984 6l-.23-.132a1 1 0 01-.372-1.364zm-7 4a1 1 0 011.364-.372L10 8.848l1.254-.716a1 1 0 11.992 1.736L11 10.723V12a1 1 0 11-2 0v-1.277l-1.246-.855a1 1 0 01-.372-1.364zM3 11a1 1 0 011 1v1.277l1.254.145a1 1 0 01-.992 1.736l-1.48-.848A1 1 0 012 14v-2a1 1 0 011-1zm14 0a1 1 0 011 1v2a1 1 0 01-.52.878l-1.48.848a1 1 0 11-.992-1.736L16 13.277V12a1 1 0 011-1zm-9.618 5.504a1 1 0 011.364.372l.254.145V16a1 1 0 112 0v1.021l.254-.145a1 1 0 11.992 1.736l-1.735.992a.995.995 0 01-1.022 0l-1.735-.992a1 1 0 01-.372-1.364z" clip-rule="evenodd"/>
-                          </svg>
                           Super Admin
                         </span>
                       {% endif %}
                     </div>
                     
                     <a href="{% url 'accounts:profile_settings' %}" class="dropdown-item" role="menuitem">
-                      <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                        <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
-                      </svg>
-                      <span>Profile Settings</span>
+                      Profile Settings
                     </a>
                     
                     <a href="{% url 'accounts:change_password' %}" class="dropdown-item" role="menuitem">
-                      <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                        <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 116 0z" clip-rule="evenodd"/>
-                      </svg>
-                      <span>Change Password</span>
+                      Change Password
                     </a>
                     
                     {% if user.role == 'admin' %}
                     <a href="{% url 'dashboard:organization_settings' %}" class="dropdown-item" role="menuitem">
-                      <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                        <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/>
-                      </svg>
-                      <span>Organization Settings</span>
+                      Organization Settings
                     </a>
                     {% endif %}
                     
                     <a href="{% url 'dashboard:support_list' %}" class="dropdown-item" role="menuitem">
-                      <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-5.6-5.6L10 3.2 5.6 8 3 6.4l4.6 4.6 1.6-1.6z" clip-rule="evenodd"/>
-                      </svg>
-                      <span>Help & Support</span>
+                      Help & Support
                     </a>
                     
                     <div class="border-t border-gray-100 my-1"></div>
@@ -406,10 +536,7 @@
                     <form method="post" action="{% url 'accounts:logout' %}" class="block">
                       {% csrf_token %}
                       <button type="submit" class="dropdown-item w-full text-left text-red-700 hover:bg-red-50 hover:text-red-800" role="menuitem">
-                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                          <path fill-rule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clip-rule="evenodd"/>
-                        </svg>
-                        <span>Sign Out</span>
+                        Sign Out
                       </button>
                     </form>
                   </div>
@@ -418,12 +545,10 @@
 
               <!-- Mobile Menu Button -->
               <button type="button" 
-                      class="lg:hidden p-2.5 text-gray-400 hover:text-gray-600 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-xl transition-all duration-150"
+                      class="utility-button lg:hidden"
                       onclick="toggleMobileMenu()"
                       aria-label="Open main menu">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
-                </svg>
+                Menu
               </button>
               
             {% else %}
@@ -442,53 +567,31 @@
           {% with current_url=request.resolver_match.url_name %}
           
           <a href="{% url 'dashboard:home' %}" class="mobile-nav-link {% if current_url == 'home' %}mobile-nav-link-active{% endif %}">
-            <svg class="w-4 h-4 mr-3" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/>
-            </svg>
             Dashboard
           </a>
           
           <a href="{% url 'dashboard:customers_list' %}" class="mobile-nav-link {% if 'customer' in current_url %}mobile-nav-link-active{% endif %}">
-            <svg class="w-4 h-4 mr-3" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/>
-            </svg>
             Customers
           </a>
           
           <a href="{% url 'dashboard:vehicles_list' %}" class="mobile-nav-link {% if 'vehicle' in current_url %}mobile-nav-link-active{% endif %}">
-            <svg class="w-4 h-4 mr-3" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.22.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99z"/>
-            </svg>
             Vehicles
           </a>
           
           <a href="{% url 'dashboard:policies_list' %}" class="mobile-nav-link {% if 'polic' in current_url %}mobile-nav-link-active{% endif %}">
-            <svg class="w-4 h-4 mr-3" fill="currentColor" viewBox="0 0 20 20">
-              <path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm0 2h12v8H4V6z" clip-rule="evenodd"/>
-            </svg>
             Policies
           </a>
           
-          <a href="{% url 'dashboard:policies_report' %}" class="mobile-nav-link {% if 'report' in current_url %}mobile-nav-link-active{% endif %}">
-            <svg class="w-4 h-4 mr-3" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/>
-            </svg>
+          <a href="{% url 'dashboard:reports_home' %}" class="mobile-nav-link {% if 'report' in current_url %}mobile-nav-link-active{% endif %}">
             Reports
           </a>
           
           {% if user.role == 'admin' or user.role == 'manager' %}
           <a href="{% url 'dashboard:permit_types_list' %}" class="mobile-nav-link {% if 'permit_types' in current_url %}mobile-nav-link-active{% endif %}">
-            <svg class="w-4 h-4 mr-3" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h5a1 1 0 000-2H4V5h12v3a1 1 0 102 0V5a2 2 0 00-2-2H4z"/>
-              <path d="M14 11a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1v-1z"/>
-            </svg>
             Permit Types
           </a>
 
           <a href="{% url 'dashboard:staff_list' %}" class="mobile-nav-link {% if 'staff' in current_url %}mobile-nav-link-active{% endif %}">
-            <svg class="w-4 h-4 mr-3" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"/>
-            </svg>
             Staff
           </a>
           {% endif %}
@@ -683,6 +786,23 @@
       // Notifications functionality
       let notificationsPage = 1;
       let notificationsLoaded = false;
+      let lastUnreadCount = 0;
+
+      function getNotificationPriority(notifications = []) {
+        if (notifications.some(notification => !notification.is_read && notification.priority === 'critical')) {
+          return 'critical';
+        }
+        if (notifications.some(notification => !notification.is_read && notification.priority === 'high')) {
+          return 'high';
+        }
+        if (notifications.some(notification => !notification.is_read && notification.priority === 'medium')) {
+          return 'medium';
+        }
+        if (notifications.some(notification => !notification.is_read && notification.priority === 'low')) {
+          return 'low';
+        }
+        return 'medium';
+      }
       
       // Notifications dropdown functionality
       function toggleNotifications() {
@@ -723,7 +843,7 @@
             }
             
             // Update badge
-            updateNotificationBadge(data.unread_count);
+            updateNotificationBadge(data.unread_count, getNotificationPriority(data.notifications || []));
             
             // Show/hide load more button
             const loadMoreBtn = document.getElementById('load-more-btn');
@@ -748,10 +868,10 @@
         div.onclick = () => markAsReadAndNavigate(notification);
         
         const priorityColors = {
-          'critical': 'text-red-600',
-          'high': 'text-orange-600',
-          'medium': 'text-blue-600',
-          'low': 'text-gray-600'
+          'critical': 'bg-rose-600',
+          'high': 'bg-amber-500',
+          'medium': 'bg-brand-600',
+          'low': 'bg-slate-500'
         };
         
         const timeAgo = getTimeAgo(new Date(notification.created_at));
@@ -759,7 +879,7 @@
         div.innerHTML = `
           <div class="flex items-start space-x-3">
             <div class="flex-shrink-0">
-              <div class="w-2 h-2 ${priorityColors[notification.priority] || 'text-gray-600'} rounded-full mt-2"></div>
+              <div class="mt-2 h-2.5 w-2.5 ${priorityColors[notification.priority] || 'bg-slate-500'} rounded-full"></div>
             </div>
             <div class="flex-1 min-w-0">
               <div class="flex items-center justify-between">
@@ -811,13 +931,30 @@
         loadNotifications(notificationsPage + 1);
       }
       
-      function updateNotificationBadge(count) {
+      function updateNotificationBadge(count, priority = 'medium') {
         const badge = document.getElementById('notification-badge');
-        if (count > 0) {
-          badge.style.display = 'block';
-        } else {
-          badge.style.display = 'none';
+        const button = document.getElementById('notification-button');
+        if (!badge || !button) {
+          return;
         }
+
+        badge.classList.remove('hidden', 'notification-badge-low', 'notification-badge-medium', 'notification-badge-high', 'notification-badge-critical');
+        if (count > 0) {
+          badge.textContent = count > 99 ? '99+' : String(count);
+          badge.classList.add(`notification-badge-${priority}`);
+          button.setAttribute('aria-label', `${count} unread notifications`);
+          if (count > lastUnreadCount) {
+            button.classList.remove('notification-bell-ring');
+            void button.offsetWidth;
+            button.classList.add('notification-bell-ring');
+          }
+        } else {
+          badge.classList.add('hidden');
+          badge.textContent = '0';
+          button.classList.remove('notification-bell-ring');
+          button.setAttribute('aria-label', 'View notifications');
+        }
+        lastUnreadCount = count;
       }
       
       function getTimeAgo(date) {
@@ -840,7 +977,7 @@
           fetch('/api/notifications/count/')
             .then(response => response.json())
             .then(data => {
-              updateNotificationBadge(data.unread_count);
+              updateNotificationBadge(data.unread_count, 'medium');
             })
             .catch(error => console.error('Error loading notification count:', error));
         {% endif %}
@@ -850,16 +987,13 @@
       function toggleUserMenu() {
         const dropdown = document.getElementById('user-menu-dropdown');
         const button = document.getElementById('user-menu-button');
-        const arrow = document.getElementById('user-menu-arrow');
         
         if (dropdown.classList.contains('hidden')) {
           dropdown.classList.remove('hidden');
           button.setAttribute('aria-expanded', 'true');
-          arrow.style.transform = 'rotate(180deg)';
         } else {
           dropdown.classList.add('hidden');
           button.setAttribute('aria-expanded', 'false');
-          arrow.style.transform = 'rotate(0deg)';
         }
       }
       
@@ -880,7 +1014,6 @@
         if (userMenu && !userButton.contains(event.target) && !userMenu.contains(event.target)) {
           userMenu.classList.add('hidden');
           userButton.setAttribute('aria-expanded', 'false');
-          document.getElementById('user-menu-arrow').style.transform = 'rotate(0deg)';
         }
         
         if (notificationsMenu && !event.target.closest('[onclick="toggleNotifications()"]') && !notificationsMenu.contains(event.target)) {
@@ -898,7 +1031,6 @@
           if (userMenu && !userMenu.classList.contains('hidden')) {
             userMenu.classList.add('hidden');
             document.getElementById('user-menu-button').setAttribute('aria-expanded', 'false');
-            document.getElementById('user-menu-arrow').style.transform = 'rotate(0deg)';
           }
           
           if (mobileMenu && !mobileMenu.classList.contains('hidden')) {

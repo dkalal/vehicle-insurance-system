@@ -177,6 +177,17 @@ class Payment(BaseModel):
     def approval_note(self):
         """Return the latest approval note, if one was recorded."""
         return self._extract_latest_review_note(self.APPROVED_REVIEW_MARKER_RE)
+
+    @property
+    def recorded_notes(self):
+        """Return the original notes entered when the payment was first recorded."""
+        lines = []
+        for line in (self.notes or '').splitlines():
+            stripped = line.strip()
+            if self.REJECTED_REVIEW_MARKER_RE.match(stripped) or self.APPROVED_REVIEW_MARKER_RE.match(stripped):
+                break
+            lines.append(line.rstrip())
+        return '\n'.join(lines).strip()
     
     def verify(self, verified_by):
         """

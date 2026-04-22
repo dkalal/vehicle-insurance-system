@@ -4,16 +4,16 @@
 <div class="flex items-center justify-between mb-4">
   <h1 class="text-xl font-semibold">Policy {{ policy.policy_number }}</h1>
   <div class="flex flex-wrap gap-2">
-    {% if policy.status != 'cancelled' and policy.status != 'expired' %}
+    {% if policy.can_edit %}
       <a href="{% url 'dashboard:policies_update' policy.pk %}" class="inline-flex items-center rounded border border-sky-600 text-sky-700 hover:bg-sky-50 px-3 py-2">Edit</a>
     {% endif %}
-    {% if policy.status == 'active' %}
+    {% if policy.can_renew %}
       <a href="{% url 'dashboard:policies_renew' policy.pk %}" class="inline-flex items-center rounded border border-emerald-600 text-emerald-700 hover:bg-emerald-50 px-3 py-2">Renew</a>
     {% endif %}
-    {% if policy.status == 'pending_payment' %}
+    {% if policy.can_record_payment %}
       <a href="{% url 'dashboard:payments_create' %}?policy={{ policy.pk }}" class="inline-flex items-center rounded bg-green-600 px-3 py-2 text-white hover:bg-green-700">Record Payment</a>
     {% endif %}
-    {% if policy.status in 'active,pending_payment' and user.role in 'admin,manager' %}
+    {% if policy.can_cancel and user.role != 'agent' %}
       <a href="{% url 'dashboard:policies_cancel' policy.pk %}" class="inline-flex items-center rounded border border-red-600 text-red-700 hover:bg-red-50 px-3 py-2">Cancel Policy</a>
     {% endif %}
     <a href="{% url 'dashboard:policies_list' %}" class="inline-flex items-center rounded border px-3 py-2 text-sm hover:bg-gray-50">Back</a>
@@ -26,11 +26,7 @@
       <div class="col-span-4 text-gray-600">Status</div>
       <div class="col-span-8 space-y-1">
         <div>
-          {% if policy.status == 'active' %}<span class="inline-flex rounded bg-green-100 text-green-800 px-2 py-1 text-xs">Active</span>{% endif %}
-          {% if policy.status == 'pending_payment' %}<span class="inline-flex rounded bg-yellow-100 text-yellow-800 px-2 py-1 text-xs">Pending Payment</span>{% endif %}
-          {% if policy.status == 'draft' %}<span class="inline-flex rounded bg-gray-200 text-gray-800 px-2 py-1 text-xs">Draft</span>{% endif %}
-          {% if policy.status == 'expired' %}<span class="inline-flex rounded bg-gray-800 text-white px-2 py-1 text-xs">Expired</span>{% endif %}
-          {% if policy.status == 'cancelled' %}<span class="inline-flex rounded bg-red-100 text-red-800 px-2 py-1 text-xs">Cancelled</span>{% endif %}
+          {% include 'dashboard/partials/policy_status_badge.html' with policy=policy %}
         </div>
         {% if policy.status != 'active' and total_paid is not None and total_paid >= policy.premium_amount and activation_block_reason %}
           <p class="text-xs text-red-700">
@@ -160,6 +156,16 @@
               {% endif %}
             </td>
           </tr>
+          {% if payment.recorded_notes %}
+          <tr class="bg-slate-50/70">
+            <td colspan="6" class="px-3 py-3">
+              <div class="rounded border border-slate-200 bg-white p-3">
+                <div class="text-xs font-semibold uppercase tracking-wide text-slate-600">Recorded Note</div>
+                <p class="mt-1 whitespace-pre-line text-sm text-slate-900">{{ payment.recorded_notes }}</p>
+              </div>
+            </td>
+          </tr>
+          {% endif %}
           {% if payment.rejection_reason %}
           <tr class="bg-red-50/60">
             <td colspan="6" class="px-3 py-3">

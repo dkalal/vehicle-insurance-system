@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="space-y-6">
+  <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+    <div>
+      <h1 class="text-2xl font-semibold text-slate-900">Reports Hub</h1>
+      <p class="mt-1 text-sm text-slate-600">Vehicle-first reporting for compliance, customer portfolios, insurance, and operational follow-up.</p>
+    </div>
+    <div class="rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
+      Risk window: next {{ risk_window_days }} days
+    </div>
+  </div>
+
+  <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div class="text-sm font-medium text-slate-500">Total Vehicles</div>
+      <div class="mt-2 text-3xl font-semibold text-slate-900">{{ compliance.total }}</div>
+      <div class="mt-2 text-xs text-slate-500">Core compliance anchor across the tenant fleet.</div>
+    </div>
+    <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 shadow-sm">
+      <div class="text-sm font-medium text-emerald-700">Fully Compliant</div>
+      <div class="mt-2 text-3xl font-semibold text-emerald-950">{{ compliance.compliant }}</div>
+      <div class="mt-2 text-xs text-emerald-700">Vehicles ready to operate today.</div>
+    </div>
+    <div class="rounded-2xl border border-amber-200 bg-amber-50 p-5 shadow-sm">
+      <div class="text-sm font-medium text-amber-700">At Risk</div>
+      <div class="mt-2 text-3xl font-semibold text-amber-950">{{ compliance.at_risk }}</div>
+      <div class="mt-2 text-xs text-amber-700">Records expiring within the configured alert window.</div>
+    </div>
+    <div class="rounded-2xl border border-rose-200 bg-rose-50 p-5 shadow-sm">
+      <div class="text-sm font-medium text-rose-700">Non-Compliant</div>
+      <div class="mt-2 text-3xl font-semibold text-rose-950">{{ compliance.non_compliant }}</div>
+      <div class="mt-2 text-xs text-rose-700">Immediate operational and regulatory exposure.</div>
+    </div>
+  </section>
+
+  <section class="grid gap-4 lg:grid-cols-3">
+    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <h2 class="text-base font-semibold text-slate-900">Customer Portfolio Visibility</h2>
+      <dl class="mt-4 space-y-3 text-sm">
+        <div class="flex items-center justify-between">
+          <dt class="text-slate-500">Customers</dt>
+          <dd class="font-semibold text-slate-900">{{ report_metrics.customers }}</dd>
+        </div>
+        <div class="flex items-center justify-between">
+          <dt class="text-slate-500">Companies</dt>
+          <dd class="font-semibold text-slate-900">{{ report_metrics.companies }}</dd>
+        </div>
+        <div class="flex items-center justify-between">
+          <dt class="text-slate-500">Individuals</dt>
+          <dd class="font-semibold text-slate-900">{{ report_metrics.individuals }}</dd>
+        </div>
+      </dl>
+      <a href="{% url 'dashboard:reports_customers' %}" class="mt-5 inline-flex items-center rounded-lg border border-sky-600 px-3 py-2 text-sm font-medium text-sky-700 hover:bg-sky-50">Open customer portfolios</a>
+    </div>
+
+    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <h2 class="text-base font-semibold text-slate-900">Insurance & Payments</h2>
+      <dl class="mt-4 space-y-3 text-sm">
+        <div class="flex items-center justify-between">
+          <dt class="text-slate-500">Active Policies</dt>
+          <dd class="font-semibold text-slate-900">{{ report_metrics.active_policies }}</dd>
+        </div>
+        <div class="flex items-center justify-between">
+          <dt class="text-slate-500">Pending Payment Policies</dt>
+          <dd class="font-semibold text-slate-900">{{ report_metrics.pending_payment_policies }}</dd>
+        </div>
+        <div class="flex items-center justify-between">
+          <dt class="text-slate-500">Policies Expiring Soon</dt>
+          <dd class="font-semibold text-slate-900">{{ report_metrics.expiring_policies }}</dd>
+        </div>
+      </dl>
+      <a href="{% url 'dashboard:policies_report' %}" class="mt-5 inline-flex items-center rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Open insurance report</a>
+    </div>
+
+    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <h2 class="text-base font-semibold text-slate-900">Permit & LATRA Watch</h2>
+      <dl class="mt-4 space-y-3 text-sm">
+        <div class="flex items-center justify-between">
+          <dt class="text-slate-500">LATRA Expiring Soon</dt>
+          <dd class="font-semibold text-slate-900">{{ report_metrics.expiring_latra }}</dd>
+        </div>
+        <div class="flex items-center justify-between">
+          <dt class="text-slate-500">Permits Expiring Soon</dt>
+          <dd class="font-semibold text-slate-900">{{ report_metrics.expiring_permits }}</dd>
+        </div>
+      </dl>
+      <a href="{% url 'dashboard:registrations_report' %}" class="mt-5 inline-flex items-center rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Open registration trends</a>
+    </div>
+  </section>
+
+  <section class="grid gap-4 xl:grid-cols-3">
+    <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <h2 class="text-base font-semibold text-slate-900">Recommended Reports</h2>
+      <ul class="mt-4 space-y-3 text-sm text-slate-600">
+        <li>Fleet compliance overview for vehicle-first operational awareness.</li>
+        <li>Customer and company portfolio reports for owner-specific fleet visibility.</li>
+        <li>Insurance and payment monitoring for activation and renewal risk.</li>
+        <li>Registration, LATRA, and permit trend reporting for compliance planning.</li>
+      </ul>
+    </article>
+
+    <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm xl:col-span-2">
+      <div class="flex items-center justify-between">
+        <h2 class="text-base font-semibold text-slate-900">Vehicles Requiring Insurance Attention</h2>
+        <a href="{% url 'dashboard:policies_report' %}?status=active" class="text-sm font-medium text-sky-700 hover:underline">View full report</a>
+      </div>
+      <div class="mt-4 overflow-x-auto rounded-xl border border-slate-200">
+        <table class="min-w-full text-sm">
+          <thead class="bg-slate-50 text-left text-slate-600">
+            <tr>
+              <th class="px-3 py-2">Policy #</th>
+              <th class="px-3 py-2">Vehicle</th>
+              <th class="px-3 py-2">Owner</th>
+              <th class="px-3 py-2">Expiry</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            {% for policy in expiring_policies %}
+            <tr class="hover:bg-slate-50">
+              <td class="px-3 py-2">
+                <a href="{% url 'dashboard:policies_detail' policy.pk %}" class="font-medium text-sky-700 hover:underline">{{ policy.policy_number }}</a>
+              </td>
+              <td class="px-3 py-2">{{ policy.vehicle.registration_number }}</td>
+              <td class="px-3 py-2">
+                {% if policy.vehicle.owner.customer_type == 'company' %}
+                  {{ policy.vehicle.owner.company_name }}
+                {% else %}
+                  {{ policy.vehicle.owner.first_name }} {{ policy.vehicle.owner.last_name }}
+                {% endif %}
+              </td>
+              <td class="px-3 py-2">{{ policy.end_date|date:"Y-m-d" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="4" class="px-3 py-6 text-center text-slate-500">No active policies are expiring within the current risk window.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </article>
+  </section>
+</div>
+{% endblock %}

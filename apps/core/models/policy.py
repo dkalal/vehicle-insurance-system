@@ -37,6 +37,29 @@ class Policy(BaseModel):
         (STATUS_EXPIRED, 'Expired'),
         (STATUS_CANCELLED, 'Cancelled'),
     ]
+
+    STATUS_UI_META = {
+        STATUS_DRAFT: {
+            'label': 'Draft',
+            'classes': 'inline-flex rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700',
+        },
+        STATUS_PENDING_PAYMENT: {
+            'label': 'Pending Payment',
+            'classes': 'inline-flex rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800',
+        },
+        STATUS_ACTIVE: {
+            'label': 'Active',
+            'classes': 'inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-800',
+        },
+        STATUS_EXPIRED: {
+            'label': 'Expired',
+            'classes': 'inline-flex rounded-full border border-slate-300 bg-slate-800 px-2.5 py-1 text-xs font-semibold text-white',
+        },
+        STATUS_CANCELLED: {
+            'label': 'Cancelled',
+            'classes': 'inline-flex rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-800',
+        },
+    }
     
     # Policy Identification
     policy_number = models.CharField(
@@ -283,10 +306,44 @@ class Policy(BaseModel):
     
     def is_expired(self):
         """Check if policy is expired."""
-        from django.utils import timezone
         from datetime import date
         return (self.status == self.STATUS_ACTIVE and 
                 self.end_date < date.today())
+
+    @property
+    def ui_status(self):
+        """Return status metadata for consistent badge rendering across the UI."""
+        return self.STATUS_UI_META.get(
+            self.status,
+            {
+                'label': (self.status or 'Unknown').replace('_', ' ').title(),
+                'classes': 'inline-flex rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700',
+            },
+        )
+
+    @property
+    def ui_status_label(self):
+        return self.ui_status['label']
+
+    @property
+    def ui_status_classes(self):
+        return self.ui_status['classes']
+
+    @property
+    def can_record_payment(self):
+        return self.status == self.STATUS_PENDING_PAYMENT
+
+    @property
+    def can_renew(self):
+        return self.status == self.STATUS_ACTIVE
+
+    @property
+    def can_edit(self):
+        return self.status in {self.STATUS_DRAFT, self.STATUS_PENDING_PAYMENT}
+
+    @property
+    def can_cancel(self):
+        return self.status in {self.STATUS_ACTIVE, self.STATUS_PENDING_PAYMENT}
     
     @classmethod
     def generate_policy_number(cls, tenant):

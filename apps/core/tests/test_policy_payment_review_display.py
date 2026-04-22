@@ -95,6 +95,28 @@ class PaymentReviewDisplayTests(TestCase):
         self.assertContains(response, "Rejection Reason")
         self.assertContains(response, "Payment proof does not match the bank reference")
 
+    def test_policy_detail_shows_original_recorded_payment_notes(self):
+        Payment.objects.create(
+            tenant=self.tenant,
+            policy=self.policy,
+            amount="500000.00",
+            payment_date=timezone.now(),
+            payment_method=Payment.PAYMENT_METHOD_BANK_TRANSFER,
+            reference_number="TXN-002A",
+            payer_name="JS Logistics",
+            notes="Paid from CRDB branch deposit slip\nCustomer requested same-day activation",
+            created_by=self.admin,
+            updated_by=self.admin,
+        )
+
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse("dashboard:policies_detail", args=[self.policy.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Recorded Note")
+        self.assertContains(response, "Paid from CRDB branch deposit slip")
+        self.assertContains(response, "Customer requested same-day activation")
+
     def test_policy_detail_handles_cancelled_policy_without_actor(self):
         self.policy.status = Policy.STATUS_CANCELLED
         self.policy.cancelled_at = timezone.now()
@@ -108,3 +130,44 @@ class PaymentReviewDisplayTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Cancelled")
         self.assertContains(response, "Not available")
+
+    def test_fully_paid_pending_policy_is_reconciled_across_policy_views(self):
+        Payment.objects.create(
+            tenant=self.tenant,
+            policy=self.policy,
+            amount="500000.00",
+            payment_date=timezone.now(),
+            payment_method=Payment.PAYMENT_METHOD_BANK_TRANSFER,
+            reference_number="TXN-003",
+            is_verified=True,
+            verified_by=self.admin,
+            verified_at=timezone.now(),
+            payer_name="JS Logistics",
+            created_by=self.admin,
+            updated_by=self.admin,
+        )
+
+        self.client.force_login(self.admin)
+
+        list_response = self.client.get(reverse("dashboard:policies_list"))
+        detail_response = self.client.get(reverse("dashboard:policies_detail", args=[self.policy.pk]))
+        report_response = self.client.get(reverse("dashboard:policies_report"))
+        vehicle_response = self.client.get(reverse("dashboard:vehicles_detail", args=[self.vehicle.pk]))
+        payment_response = self.client.get(reverse("dashboard:payments_create") + f"?policy={self.policy.pk}")
+
+        self.policy.refresh_from_db()
+
+        self.assertEqual(self.policy.status, Policy.STATUS_ACTIVE)
+        self.assertEqual(list_response.status_code, 200)
+        self.assertEqual(detail_response.status_code, 200)
+        self.assertEqual(report_response.status_code, 200)
+        self.assertEqual(vehicle_response.status_code, 200)
+        self.assertEqual(payment_response.status_code, 200)
+
+        self.assertContains(list_response, "Active")
+        self.assertContains(detail_response, "Active")
+        self.assertNotContains(detail_response, "Record Payment")
+        self.assertContains(report_response, "Active")
+        self.assertContains(vehicle_response, "Active Insurance Coverage")
+        self.assertContains(vehicle_response, "Active")
+        self.assertNotContains(payment_response, "Pending payment")

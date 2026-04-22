@@ -23,15 +23,7 @@
         <div class="font-medium text-gray-800">Policy summary</div>
         <div class="mt-1 text-gray-700">
           Policy {{ selected_policy.policy_number }}
-          {% if selected_policy.status == 'active' %}
-            <span class="ml-2 inline-flex rounded bg-green-100 px-2 py-0.5 text-xs text-green-800">Active</span>
-          {% elif selected_policy.status == 'pending_payment' %}
-            <span class="ml-2 inline-flex rounded bg-yellow-100 px-2 py-0.5 text-xs text-yellow-800">Pending payment</span>
-          {% elif selected_policy.status == 'expired' %}
-            <span class="ml-2 inline-flex rounded bg-gray-800 px-2 py-0.5 text-xs text-white">Expired</span>
-          {% elif selected_policy.status == 'cancelled' %}
-            <span class="ml-2 inline-flex rounded bg-red-100 px-2 py-0.5 text-xs text-red-800">Cancelled</span>
-          {% endif %}
+          <span class="ml-2">{% include 'dashboard/partials/policy_status_badge.html' with policy=selected_policy %}</span>
         </div>
         <div class="mt-1 text-xs text-gray-700">
           {{ selected_policy.vehicle.registration_number }} – {{ selected_policy.vehicle.make }} {{ selected_policy.vehicle.model }}

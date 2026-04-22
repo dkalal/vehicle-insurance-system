@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import include, path
 from .views import (
     DashboardHomeView,
     OnboardingWelcomeView,
@@ -52,6 +52,7 @@ app_name = "dashboard"
 
 urlpatterns = [
     path("", DashboardHomeView.as_view(), name="home"),
+    path("reports/", include("apps.reports.urls")),
     path("onboarding/", OnboardingWelcomeView.as_view(), name="onboarding_welcome"),
     path("onboarding/company/", OnboardingCompanyView.as_view(), name="onboarding_company"),
     path("onboarding/vehicle/", OnboardingVehicleBasicsView.as_view(), name="onboarding_vehicle_basics"),

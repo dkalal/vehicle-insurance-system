@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="space-y-6">
+  <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+    <div>
+      <h1 class="text-2xl font-semibold text-slate-900">Customer & Company Portfolio Reports</h1>
+      <p class="mt-1 text-sm text-slate-600">Professional owner-based fleet reporting built on top of vehicle compliance, not policy-only records.</p>
+    </div>
+    <a href="{% url 'dashboard:reports_home' %}" class="inline-flex items-center rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Back to report hub</a>
+  </div>
+
+  <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div class="text-sm font-medium text-slate-500">Customers in Report</div>
+      <div class="mt-2 text-3xl font-semibold text-slate-900">{{ summary.customers }}</div>
+    </div>
+    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div class="text-sm font-medium text-slate-500">Vehicles Tracked</div>
+      <div class="mt-2 text-3xl font-semibold text-slate-900">{{ summary.vehicles }}</div>
+    </div>
+    <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 shadow-sm">
+      <div class="text-sm font-medium text-emerald-700">Compliant</div>
+      <div class="mt-2 text-3xl font-semibold text-emerald-950">{{ summary.compliant }}</div>
+    </div>
+    <div class="rounded-2xl border border-rose-200 bg-rose-50 p-5 shadow-sm">
+      <div class="text-sm font-medium text-rose-700">Non-Compliant</div>
+      <div class="mt-2 text-3xl font-semibold text-rose-950">{{ summary.non_compliant }}</div>
+      <div class="mt-2 text-xs text-rose-700">At risk: {{ summary.at_risk }}</div>
+    </div>
+  </section>
+
+  <form method="get" class="grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-12" role="search">
+    <div class="md:col-span-5">
+      <label class="sr-only" for="id_customer_query">Search customers</label>
+      <input id="id_customer_query" type="text" name="q" value="{{ filters.q }}" placeholder="Search customer, company, email, phone" class="block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500" />
+    </div>
+    <div class="md:col-span-3">
+      <label class="sr-only" for="id_customer_type">Customer type</label>
+      <select id="id_customer_type" name="customer_type" class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500">
+        <option value="">All customer types</option>
+        <option value="company" {% if filters.customer_type == 'company' %}selected{% endif %}>Companies</option>
+        <option value="individual" {% if filters.customer_type == 'individual' %}selected{% endif %}>Individuals</option>
+      </select>
+    </div>
+    <div class="md:col-span-2">
+      <button type="submit" class="inline-flex w-full items-center justify-center rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Apply</button>
+    </div>
+    <div class="md:col-span-2">
+      <a href="{% url 'dashboard:reports_customers' %}" class="inline-flex w-full items-center justify-center rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Clear</a>
+    </div>
+  </form>
+
+  <section class="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <table class="min-w-full text-sm">
+      <thead class="bg-slate-50 text-left text-slate-600">
+        <tr>
+          <th class="px-4 py-3">Customer / Company</th>
+          <th class="px-4 py-3">Type</th>
+          <th class="px-4 py-3">Vehicles</th>
+          <th class="px-4 py-3">Compliant</th>
+          <th class="px-4 py-3">At Risk</th>
+          <th class="px-4 py-3">Non-Compliant</th>
+          <th class="px-4 py-3">Active Insurance</th>
+          <th class="px-4 py-3">LATRA</th>
+          <th class="px-4 py-3">Permits</th>
+          <th class="px-4 py-3 text-right">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for row in rows %}
+        <tr class="hover:bg-slate-50">
+          <td class="px-4 py-3">
+            <div class="font-medium text-slate-900">{{ row.display_name }}</div>
+            <div class="text-xs text-slate-500">{{ row.customer.email|default:"No email" }}</div>
+          </td>
+          <td class="px-4 py-3">{{ row.customer.get_customer_type_display }}</td>
+          <td class="px-4 py-3 font-medium text-slate-900">{{ row.total_vehicles }}</td>
+          <td class="px-4 py-3 text-emerald-700">{{ row.compliant }}</td>
+          <td class="px-4 py-3 text-amber-700">{{ row.at_risk }}</td>
+          <td class="px-4 py-3 text-rose-700">{{ row.non_compliant }}</td>
+          <td class="px-4 py-3">{{ row.active_policies }}</td>
+          <td class="px-4 py-3">{{ row.vehicles_with_latra }}</td>
+          <td class="px-4 py-3">{{ row.vehicles_with_permits }}</td>
+          <td class="px-4 py-3 text-right">
+            <a href="{% url 'dashboard:reports_customer_detail' row.customer.pk %}" class="inline-flex items-center rounded-lg border border-sky-600 px-3 py-1.5 text-sm font-medium text-sky-700 hover:bg-sky-50">View portfolio</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="10" class="px-4 py-8 text-center text-slate-500">No customers matched the current filters.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <div class="flex items-center justify-between text-sm text-slate-600">
+    <div>
+      {% if page_obj.paginator.count %}
+        Showing {{ rows|length }} of {{ page_obj.paginator.count }} customer portfolios.
+      {% else %}
+        No customer portfolios available.
+      {% endif %}
+    </div>
+    <div class="flex items-center gap-2">
+      {% if page_obj.has_previous %}
+        <a href="?page=1{% if querystring %}&{{ querystring }}{% endif %}" class="rounded border border-slate-300 px-2 py-1 hover:bg-slate-50">First</a>
+        <a href="?page={{ page_obj.previous_page_number }}{% if querystring %}&{{ querystring }}{% endif %}" class="rounded border border-slate-300 px-2 py-1 hover:bg-slate-50">Prev</a>
+      {% else %}
+        <span class="rounded border border-slate-200 px-2 py-1 opacity-50">First</span>
+        <span class="rounded border border-slate-200 px-2 py-1 opacity-50">Prev</span>
+      {% endif %}
+      <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+      {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}{% if querystring %}&{{ querystring }}{% endif %}" class="rounded border border-slate-300 px-2 py-1 hover:bg-slate-50">Next</a>
+        <a href="?page={{ page_obj.paginator.num_pages }}{% if querystring %}&{{ querystring }}{% endif %}" class="rounded border border-slate-300 px-2 py-1 hover:bg-slate-50">Last</a>
+      {% else %}
+        <span class="rounded border border-slate-200 px-2 py-1 opacity-50">Next</span>
+        <span class="rounded border border-slate-200 px-2 py-1 opacity-50">Last</span>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

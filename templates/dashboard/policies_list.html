@@ -59,21 +59,21 @@
         <td class="px-3 py-2">{{ p.start_date|date:"Y-m-d" }} → {{ p.end_date|date:"Y-m-d" }}</td>
         <td class="px-3 py-2">{{ p.premium_amount }}</td>
         <td class="px-3 py-2">
-          {% if p.status == 'active' %}<span class="inline-flex rounded bg-green-100 text-green-800 px-2 py-1 text-xs">Active</span>{% endif %}
-          {% if p.status == 'pending_payment' %}<span class="inline-flex rounded bg-yellow-100 text-yellow-800 px-2 py-1 text-xs">Pending</span>{% endif %}
-          {% if p.status == 'draft' %}<span class="inline-flex rounded bg-gray-200 text-gray-800 px-2 py-1 text-xs">Draft</span>{% endif %}
-          {% if p.status == 'expired' %}<span class="inline-flex rounded bg-gray-800 text-white px-2 py-1 text-xs">Expired</span>{% endif %}
-          {% if p.status == 'cancelled' %}<span class="inline-flex rounded bg-red-100 text-red-800 px-2 py-1 text-xs">Cancelled</span>{% endif %}
+          {% include 'dashboard/partials/policy_status_badge.html' with policy=p %}
           {% if p.id in expiring_policy_ids %}<span class="inline-flex rounded bg-orange-100 text-orange-800 px-2 py-1 text-xs ml-1">Expiring soon</span>{% endif %}
         </td>
         <td class="px-3 py-2 text-right">
           <a class="inline-flex items-center rounded border border-gray-300 px-2 py-1 hover:bg-gray-50" href="{% url 'dashboard:policies_detail' p.pk %}">View</a>
+          {% if p.can_edit %}
           <a class="inline-flex items-center rounded border border-sky-600 text-sky-700 hover:bg-sky-50 px-2 py-1" href="{% url 'dashboard:policies_update' p.pk %}">Edit</a>
+          {% endif %}
+          {% if p.can_record_payment %}
           <a class="inline-flex items-center rounded bg-green-600 px-2 py-1 text-white hover:bg-green-700" href="{% url 'dashboard:payments_create' %}?policy={{ p.pk }}">Record Payment</a>
-          {% if p.status == 'active' %}
+          {% endif %}
+          {% if p.can_renew %}
           <a class="inline-flex items-center rounded border border-emerald-600 text-emerald-700 hover:bg-emerald-50 px-2 py-1 ml-1" href="{% url 'dashboard:policies_renew' p.pk %}">Renew</a>
           {% endif %}
-          {% if p.status != 'cancelled' %}
+          {% if p.can_cancel and user.role != 'agent' %}
           <a href="{% url 'dashboard:policies_cancel' p.pk %}"
              class="inline-flex items-center rounded border border-red-600 text-red-700 hover:bg-red-50 px-2 py-1 ml-1">
             Cancel

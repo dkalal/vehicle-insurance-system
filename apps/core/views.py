@@ -31,6 +31,7 @@ from .forms import (
     PermitTypeForm,
 )
 from .services import customer_service, vehicle_service, policy_service, payment_service, VehicleComplianceService
+from .services import policy_status_service
 from .services import vehicle_access_service, vehicle_import_service
 from .services import latra_service, permit_service, permit_type_service
 from .services import onboarding_service
@@ -60,6 +61,7 @@ class DashboardHomeView(TenantUserRequiredMixin, TenantScopedQuerysetMixin, Temp
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         tenant = getattr(self.request, 'tenant', None)
+        policy_status_service.reconcile_policies(tenant=tenant)
         
         # Get risk window from tenant settings
         risk_days = 30
@@ -441,13 +443,15 @@ class PolicyDetailView(TenantRoleRequiredMixin, TenantScopedQuerysetMixin, Detai
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
+        obj = ctx.get('policy')
+        if obj is not None:
+            policy_status_service.reconcile_policy_status(obj)
         defs = FieldDefinition.objects.filter(
             tenant=self.request.tenant,
             entity_type=FieldDefinition.ENTITY_POLICY,
             is_active=True,
         ).order_by('order', 'name')
         values = {}
-        obj = ctx.get('policy')
         if obj:
             for d in defs:
                 try:
@@ -1254,6 +1258,7 @@ class VehicleDetailView(TenantRoleRequiredMixin, DetailView):
         ctx = super().get_context_data(**kwargs)
         vehicle = ctx.get('vehicle')
         tenant = getattr(self.request, 'tenant', None)
+        policy_status_service.reconcile_policies(tenant=tenant, vehicle=vehicle)
         from django.utils import timezone
         ctx['today'] = timezone.now().date()
         
@@ -1557,6 +1562,7 @@ class PolicyListView(TenantRoleRequiredMixin, ListView):
     paginate_by = 25
 
     def get_queryset(self):
+        policy_status_service.reconcile_policies(tenant=self.request.tenant)
         qs = (
             Policy.objects.filter(tenant=self.request.tenant)
             .select_related('vehicle', 'vehicle__owner')
@@ -1745,6 +1751,7 @@ class PolicyReportView(TenantRoleRequiredMixin, ListView):
     paginate_by = 50
 
     def get_queryset(self):
+        policy_status_service.reconcile_policies(tenant=self.request.tenant)
         qs = Policy.objects.filter(tenant=self.request.tenant).select_related('vehicle', 'vehicle__owner').order_by('-created_at')
         allowed = vehicle_access_service.get_allowed_vehicle_types_for_user(self.request.user)
         if allowed:
@@ -2075,6 +2082,7 @@ class PaymentCreateView(TenantRoleRequiredMixin, CreateView):
     success_url = reverse_lazy('dashboard:policies_list')
 
     def get_form_kwargs(self):
+        policy_status_service.reconcile_policies(tenant=getattr(self.request, 'tenant', None))
         kwargs = super().get_form_kwargs()
         kwargs['user'] = self.request.user
         kwargs['tenant'] = getattr(self.request, 'tenant', None)
@@ -2181,6 +2189,8 @@ class PaymentCreateView(TenantRoleRequiredMixin, CreateView):
                     except Exception:
                         selected_policy = None
 
+        if selected_policy is not None:
+            policy_status_service.reconcile_policy_status(selected_policy)
         ctx['selected_policy'] = selected_policy
         # Simple flag to allow the template to describe behavior clearly per role
         user = self.request.user
