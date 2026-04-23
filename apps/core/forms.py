@@ -1,5 +1,6 @@
 from django import forms
 from .models import Customer, Vehicle, Policy, Payment, SupportRequest, LATRARecord, VehiclePermit, PermitType
+from .services import support_request_service
 
 
 class CustomerForm(forms.ModelForm):
@@ -195,7 +196,8 @@ class SupportRequestForm(forms.ModelForm):
     class Meta:
         model = SupportRequest
         fields = [
-            'subject', 'message', 'priority',
+            'request_type', 'subject', 'message', 'priority',
+            'vehicle_registration_number', 'policy_reference', 'permit_reference',
         ]
         widgets = {
             'message': forms.Textarea(attrs={'rows': 4}),
@@ -221,14 +223,29 @@ class SupportRequestForm(forms.ModelForm):
             ('normal', 'Normal'),
             ('high', 'High'),
         ], attrs={'class': tailwind_select})
+        self.fields['request_type'].widget.attrs['class'] = tailwind_select
+        self.fields['priority'].help_text = "Choose how urgently platform support should respond."
+        self.fields['request_type'].help_text = "Start by choosing the area where you are blocked."
+        self.fields['vehicle_registration_number'].help_text = "Optional. Add the affected vehicle registration number."
+        self.fields['policy_reference'].help_text = "Optional. Add the policy number or reference."
+        self.fields['permit_reference'].help_text = "Optional. Add the permit, LATRA, or inspection reference."
         for name, field in self.fields.items():
-            if name == 'priority':
+            if name in ('priority', 'request_type'):
                 continue
             existing = field.widget.attrs.get('class', '')
             if name == 'message':
                 field.widget.attrs['class'] = (existing + ' ' if existing else '') + tailwind_textarea
             else:
                 field.widget.attrs['class'] = (existing + ' ' if existing else '') + tailwind_input
+        self.request_type_help_text = support_request_service.get_request_type_help_text()
+
+    def clean(self):
+        cleaned = super().clean()
+        for field_name in ('subject', 'message', 'vehicle_registration_number', 'policy_reference', 'permit_reference'):
+            value = cleaned.get(field_name)
+            if isinstance(value, str):
+                cleaned[field_name] = value.strip()
+        return cleaned
 
 class VehicleForm(forms.ModelForm):
     class Meta:

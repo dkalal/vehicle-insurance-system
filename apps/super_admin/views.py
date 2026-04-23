@@ -8,13 +8,16 @@ from django.views import View
 from django.views.generic import TemplateView, ListView, CreateView, UpdateView, FormView
 from django.db.models import Q
 from django.utils.dateparse import parse_date
+from django.utils import timezone
+from datetime import timedelta
 
 from auditlog.models import LogEntry
 
 from apps.accounts.permissions import SuperAdminRequiredMixin
 from apps.tenants.models import Tenant
-from .forms import TenantAdminForm, TenantForm, PlatformConfigForm
-from apps.core.models import SupportRequest
+from .forms import TenantAdminForm, TenantForm, PlatformConfigForm, SupportRequestUpdateForm
+from apps.core.models import SupportRequest, SupportRequestEvent
+from apps.core.services import support_request_service
 from apps.tenants import services as tenant_services
 from .models import PlatformConfig
 from apps.accounts.services import password_reset_service
@@ -331,53 +334,159 @@ class SupportRequestListView(SuperAdminRequiredMixin, ListView):
         qs = (
             SupportRequest._base_manager
             .select_related('tenant', 'assigned_to')
-            .only('subject', 'status', 'priority', 'created_at', 'tenant__name', 'assigned_to__email')
-            .order_by('-created_at')
+            .only(
+                'subject',
+                'status',
+                'priority',
+                'request_type',
+                'created_at',
+                'updated_at',
+                'resolved_at',
+                'tenant__name',
+                'assigned_to__email',
+                'vehicle_registration_number',
+                'policy_reference',
+                'permit_reference',
+            )
         )
         q = (self.request.GET.get('q') or '').strip()
         status = (self.request.GET.get('status') or '').strip()
         priority = (self.request.GET.get('priority') or '').strip()
+        request_type = (self.request.GET.get('request_type') or '').strip()
         tenant = (self.request.GET.get('tenant') or '').strip()
+        queue = (self.request.GET.get('queue') or 'all').strip()
         if q:
-            qs = qs.filter(models.Q(subject__icontains=q) | models.Q(message__icontains=q))
+            qs = qs.filter(
+                models.Q(subject__icontains=q)
+                | models.Q(message__icontains=q)
+                | models.Q(vehicle_registration_number__icontains=q)
+                | models.Q(policy_reference__icontains=q)
+                | models.Q(permit_reference__icontains=q)
+            )
         if status:
             qs = qs.filter(status=status)
         if priority:
             qs = qs.filter(priority=priority)
+        if request_type:
+            qs = qs.filter(request_type=request_type)
         if tenant:
             if tenant.isdigit():
                 qs = qs.filter(tenant_id=int(tenant))
             else:
                 qs = qs.filter(tenant__name__icontains=tenant)
-        return qs
+        if queue == 'unassigned':
+            qs = qs.filter(assigned_to__isnull=True)
+        elif queue == 'high_priority':
+            qs = qs.filter(priority=SupportRequest.PRIORITY_HIGH).exclude(status=SupportRequest.STATUS_RESOLVED)
+        elif queue == 'waiting_on_tenant':
+            qs = qs.filter(status=SupportRequest.STATUS_WAITING_ON_TENANT)
+        elif queue == 'aging':
+            aging_ids = [
+                ticket.id
+                for ticket in qs
+                if support_request_service.get_aging_state(ticket) in ('warning', 'overdue')
+            ]
+            qs = qs.filter(id__in=aging_ids)
+        elif queue == 'resolved_recently':
+            qs = qs.filter(
+                status=SupportRequest.STATUS_RESOLVED,
+                resolved_at__gte=timezone.now() - timedelta(days=7),
+            )
+
+        priority_rank = models.Case(
+            models.When(priority=SupportRequest.PRIORITY_HIGH, then=models.Value(0)),
+            models.When(priority=SupportRequest.PRIORITY_NORMAL, then=models.Value(1)),
+            default=models.Value(2),
+            output_field=models.IntegerField(),
+        )
+        status_rank = models.Case(
+            models.When(status=SupportRequest.STATUS_OPEN, then=models.Value(0)),
+            models.When(status=SupportRequest.STATUS_IN_PROGRESS, then=models.Value(1)),
+            models.When(status=SupportRequest.STATUS_WAITING_ON_TENANT, then=models.Value(2)),
+            default=models.Value(3),
+            output_field=models.IntegerField(),
+        )
+        return qs.annotate(priority_rank=priority_rank, status_rank=status_rank).order_by(
+            'status_rank',
+            'priority_rank',
+            'created_at',
+        )
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
+        base_queryset = SupportRequest._base_manager.select_related('tenant', 'assigned_to').all()
+        queue_counts = support_request_service.get_queue_counts(queryset=base_queryset)
+        ticket_rows = []
+        for ticket in ctx['tickets']:
+            ticket_rows.append({
+                'ticket': ticket,
+                'aging_state': support_request_service.get_aging_state(ticket),
+                'sla_label': support_request_service.get_sla_label(ticket),
+                'primary_reference': ticket.primary_reference,
+            })
         ctx['filters'] = {
             'q': self.request.GET.get('q', ''),
             'status': self.request.GET.get('status', ''),
             'priority': self.request.GET.get('priority', ''),
+            'request_type': self.request.GET.get('request_type', ''),
             'tenant': self.request.GET.get('tenant', ''),
+            'queue': self.request.GET.get('queue', 'all'),
         }
+        ctx['queue_counts'] = queue_counts
+        ctx['request_type_choices'] = SupportRequest.REQUEST_TYPE_CHOICES
+        ctx['ticket_rows'] = ticket_rows
         params = self.request.GET.copy()
         params.pop('page', None)
         ctx['querystring'] = params.urlencode()
         return ctx
 
 
-class SupportRequestUpdateView(SuperAdminRequiredMixin, UpdateView):
-    model = SupportRequest
-    fields = ['status', 'priority', 'assigned_to', 'resolved_at']
+class SupportRequestUpdateView(SuperAdminRequiredMixin, FormView):
+    form_class = SupportRequestUpdateForm
     template_name = 'super_admin/support_update.html'
     success_url = reverse_lazy('super_admin:support_list')
 
-    def get_queryset(self):
-        return SupportRequest._base_manager.all()
+    def dispatch(self, request, *args, **kwargs):
+        self.ticket = get_object_or_404(
+            SupportRequest._base_manager.select_related('tenant', 'assigned_to'),
+            pk=kwargs.get('pk'),
+        )
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_initial(self):
+        return {
+            'status': self.ticket.status,
+            'priority': self.ticket.priority,
+            'assigned_to': self.ticket.assigned_to,
+            'resolution_summary': self.ticket.resolution_summary,
+        }
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['ticket'] = self.ticket
+        ctx['events'] = self.ticket.events.select_related('created_by', 'new_assignee', 'previous_assignee')
+        ctx['aging_state'] = support_request_service.get_aging_state(self.ticket)
+        ctx['sla_label'] = support_request_service.get_sla_label(self.ticket)
+        return ctx
 
     @transaction.atomic
     def form_valid(self, form):
+        try:
+            support_request_service.update_support_request(
+                support_request=self.ticket,
+                actor=self.request.user,
+                status=form.cleaned_data['status'],
+                priority=form.cleaned_data['priority'],
+                assigned_to=form.cleaned_data.get('assigned_to'),
+                tenant_message=form.cleaned_data.get('tenant_message', ''),
+                internal_note=form.cleaned_data.get('internal_note', ''),
+                resolution_summary=form.cleaned_data.get('resolution_summary', ''),
+            )
+        except ValidationError as exc:
+            form.add_error(None, '; '.join(exc.messages))
+            return self.form_invalid(form)
         messages.success(self.request, 'Support request updated')
-        return super().form_valid(form)
+        return redirect(self.success_url)
 
 
 class SuperAdminUserPasswordResetView(SuperAdminRequiredMixin, View):

@@ -45,6 +45,10 @@ class StaffCreateForm(forms.Form):
         for name, field in self.fields.items():
             existing = field.widget.attrs.get('class', '')
             field.widget.attrs['class'] = (existing + ' ' if existing else '') + base
+        self.fields['role'].help_text = (
+            "Admins manage tenant settings and staff, managers oversee operations and reviews, "
+            "and agents handle daily work within assigned vehicle scope."
+        )
 
     def clean_role(self):
         role = self.cleaned_data.get('role')

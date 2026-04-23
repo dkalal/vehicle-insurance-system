@@ -1,6 +1,9 @@
 {% extends "base.html" %}
 {% block content %}
 <h1 class="text-xl font-semibold mb-4">New Staff User</h1>
+<div class="mb-4 rounded border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
+  Create a tenant-scoped staff account with the minimum role needed. Vehicle scope can be assigned after creation to narrow operational access without changing the role model.
+</div>
 <form method="post" novalidate class="bg-white rounded shadow p-4 max-w-xl">
   {% csrf_token %}
   {% if form.errors %}
@@ -50,6 +53,9 @@
       <div>
         <label class="block text-sm font-medium text-gray-700" for="id_role">Role</label>
         {{ form.role }}
+        {% if form.role.help_text %}
+        <p class="mt-1 text-xs text-gray-500">{{ form.role.help_text }}</p>
+        {% endif %}
         {% if form.role.errors %}
         <p class="mt-1 text-sm text-red-600">{{ form.role.errors.0 }}</p>
         {% endif %}

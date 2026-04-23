@@ -13,7 +13,7 @@ from apps.accounts.permissions import TenantUserRequiredMixin, TenantRoleRequire
 from apps.dynamic_fields.models import FieldDefinition
 from apps.dynamic_fields import services as df_services
 from apps.tenants import services as tenant_services
-from .models import Customer, Vehicle, Policy, Payment, SupportRequest, LATRARecord, VehiclePermit, PermitType
+from .models import Customer, Vehicle, Policy, Payment, SupportRequest, SupportRequestEvent, LATRARecord, VehiclePermit, PermitType
 from .forms import (
     CustomerForm,
     VehicleForm,
@@ -34,9 +34,10 @@ from .services import customer_service, vehicle_service, policy_service, payment
 from .services import policy_status_service
 from .services import vehicle_access_service, vehicle_import_service
 from .services import latra_service, permit_service, permit_type_service
-from .services import onboarding_service
+from .services import onboarding_service, support_request_service
 from apps.accounts.forms import StaffVehicleTypeForm, StaffCreateForm
 from apps.accounts.services import vehicle_type_access_service, staff_service
+from apps.accounts.services import staff_access_presenter
 from apps.accounts.models import UserVehicleTypeAssignment
 
 
@@ -1863,18 +1864,91 @@ class SupportRequestListView(TenantRoleRequiredMixin, ListView):
     context_object_name = 'tickets'
     paginate_by = 25
 
+    def _visible_queryset(self):
+        queryset = SupportRequest.objects.filter(tenant=self.request.tenant)
+        if getattr(self.request.user, 'role', None) == 'agent':
+            queryset = queryset.filter(created_by=self.request.user)
+        return queryset
+
     def get_queryset(self):
-        qs = SupportRequest.objects.filter(tenant=self.request.tenant).only('subject', 'status', 'priority', 'created_at').order_by('-created_at')
+        qs = (
+            self._visible_queryset()
+            .only(
+                'subject',
+                'status',
+                'priority',
+                'request_type',
+                'created_at',
+                'updated_at',
+                'vehicle_registration_number',
+                'policy_reference',
+                'permit_reference',
+            )
+            .order_by('-updated_at', '-created_at')
+        )
         status = (self.request.GET.get('status') or '').strip()
         priority = (self.request.GET.get('priority') or '').strip()
+        request_type = (self.request.GET.get('request_type') or '').strip()
         q = (self.request.GET.get('q') or '').strip()
         if status:
             qs = qs.filter(status=status)
         if priority:
             qs = qs.filter(priority=priority)
+        if request_type:
+            qs = qs.filter(request_type=request_type)
         if q:
-            qs = qs.filter(subject__icontains=q)
+            qs = qs.filter(
+                Q(subject__icontains=q)
+                | Q(message__icontains=q)
+                | Q(vehicle_registration_number__icontains=q)
+                | Q(policy_reference__icontains=q)
+                | Q(permit_reference__icontains=q)
+            )
         return qs
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        base_queryset = self._visible_queryset()
+        ctx['summary'] = support_request_service.get_status_summary(queryset=base_queryset)
+        ctx['request_type_choices'] = SupportRequest.REQUEST_TYPE_CHOICES
+        ctx['status_explanations'] = {
+            SupportRequest.STATUS_OPEN: 'Received and waiting for platform review.',
+            SupportRequest.STATUS_IN_PROGRESS: 'Platform support is actively working on this request.',
+            SupportRequest.STATUS_WAITING_ON_TENANT: 'Platform support needs more information or action from your tenant.',
+            SupportRequest.STATUS_RESOLVED: 'The request has been completed and documented.',
+        }
+        ctx['can_view_tenant_support_requests'] = getattr(self.request.user, 'role', None) in ('admin', 'manager')
+        ctx['filters'] = {
+            'status': self.request.GET.get('status', ''),
+            'priority': self.request.GET.get('priority', ''),
+            'request_type': self.request.GET.get('request_type', ''),
+            'q': self.request.GET.get('q', ''),
+        }
+        return ctx
+
+
+class SupportRequestDetailView(TenantRoleRequiredMixin, DetailView):
+    allowed_roles = ('admin', 'manager', 'agent')
+    model = SupportRequest
+    template_name = 'dashboard/support_detail.html'
+    context_object_name = 'ticket'
+
+    def get_queryset(self):
+        queryset = SupportRequest.objects.filter(tenant=self.request.tenant)
+        if getattr(self.request.user, 'role', None) == 'agent':
+            queryset = queryset.filter(created_by=self.request.user)
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ticket = self.object
+        ctx['events'] = ticket.events.filter(
+            tenant=self.request.tenant,
+            visibility=SupportRequestEvent.VISIBILITY_TENANT,
+        ).select_related('created_by')
+        ctx['aging_state'] = support_request_service.get_aging_state(ticket)
+        ctx['sla_label'] = support_request_service.get_sla_label(ticket)
+        return ctx
 
 
 class SupportRequestCreateView(TenantRoleRequiredMixin, CreateView):
@@ -1884,14 +1958,28 @@ class SupportRequestCreateView(TenantRoleRequiredMixin, CreateView):
     success_url = reverse_lazy('dashboard:support_list')
 
     def form_valid(self, form):
-        obj = form.save(commit=False)
-        obj.tenant = self.request.tenant
-        obj.created_by = self.request.user
-        obj.updated_by = self.request.user
-        obj.save()
+        obj = support_request_service.create_support_request(
+            tenant=self.request.tenant,
+            actor=self.request.user,
+            subject=form.cleaned_data['subject'],
+            message=form.cleaned_data['message'],
+            priority=form.cleaned_data['priority'],
+            request_type=form.cleaned_data['request_type'],
+            vehicle_registration_number=form.cleaned_data.get('vehicle_registration_number', ''),
+            policy_reference=form.cleaned_data.get('policy_reference', ''),
+            permit_reference=form.cleaned_data.get('permit_reference', ''),
+        )
         self.object = obj
-        messages.success(self.request, 'Support request submitted')
+        messages.success(
+            self.request,
+            'Support request submitted. Platform support can now triage it with your selected request type and references.'
+        )
         return redirect('dashboard:support_list')
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['request_type_help'] = support_request_service.get_request_type_help_text()
+        return ctx
 
 
 class PolicyCancelView(TenantRoleRequiredMixin, TemplateView):
@@ -2341,16 +2429,33 @@ class StaffListView(TenantRoleRequiredMixin, ListView):
         for row in assignments:
             mapping.setdefault(row['user_id'], []).append(row['vehicle_type'])
         label_map = {key: label for key, label in Vehicle.VEHICLE_TYPE_CHOICES}
+        role_access_guide = staff_access_presenter.get_role_access_guide()
         staff_access = []
         for staff in staff_qs:
             types = mapping.get(staff.id)
+            has_vehicle_scope_limits = bool(types)
             if types:
                 labels = [label_map.get(vt, vt) for vt in types]
+                preview_labels = labels[:3]
+                remaining_count = max(len(labels) - len(preview_labels), 0)
+                scope_reason = 'Restricted to explicitly assigned vehicle types.'
             else:
                 labels = ['All vehicle types']
+                preview_labels = labels
+                remaining_count = 0
+                scope_reason = 'No vehicle-type restriction was assigned, so tenant-wide vehicle access applies.'
             staff_access.append({
                 'user': staff,
                 'vehicle_types': labels,
+                'vehicle_type_preview': preview_labels,
+                'remaining_vehicle_type_count': remaining_count,
+                'scope_reason': scope_reason,
+                'status_label': 'Active' if staff.is_active else 'Inactive',
+                'last_seen_at': getattr(staff, 'last_login', None) or getattr(staff, 'last_login_at', None),
+                'effective_capabilities': staff_access_presenter.get_effective_capabilities(
+                    user=staff,
+                    has_vehicle_scope_limits=has_vehicle_scope_limits,
+                ),
                 'metrics': {
                     'customers': cust_counts.get(staff.id, 0),
                     'vehicles': veh_counts.get(staff.id, 0),
@@ -2360,6 +2465,7 @@ class StaffListView(TenantRoleRequiredMixin, ListView):
                 },
             })
         ctx['staff_access'] = staff_access
+        ctx['role_access_guide'] = role_access_guide
         return ctx
 
 
@@ -2397,7 +2503,8 @@ class StaffCreateView(TenantRoleRequiredMixin, FormView):
             messages.success(
                 self.request,
                 f'Staff user created successfully. Initial password: {temp_password}. '
-                'Ask the user to change it after first login.'
+                'Share it securely once, then require the user to change it immediately after first login.',
+                extra_tags='no-autohide'
             )
         else:
             messages.success(self.request, 'Staff user created successfully')
@@ -2515,10 +2622,6 @@ class StaffVehicleTypeUpdateView(TenantRoleRequiredMixin, FormView):
         messages.success(self.request, 'Staff vehicle access updated')
         return redirect('dashboard:staff_list')
 
-    def get_context_data(self, **kwargs):
-        ctx = super().get_context_data(**kwargs)
-        ctx['staff_user'] = self.staff_user
-        return ctx
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx['staff_user'] = self.staff_user

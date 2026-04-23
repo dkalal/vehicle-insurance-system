@@ -3,7 +3,7 @@
 <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
   <div>
     <h1 class="text-xl font-semibold">Staff Access</h1>
-    <p class="text-sm text-gray-600">Assign which vehicle types each staff member can manage and review their activity.</p>
+    <p class="text-sm text-gray-600">Review tenant roles, vehicle scope, and operational access before making staff changes.</p>
   </div>
   {% if request.user.role == 'admin' %}
   <div>
@@ -11,6 +11,49 @@
   </div>
   {% endif %}
 </div>
+
+<section class="mb-6 grid gap-4 lg:grid-cols-[1.2fr_1fr]">
+  <div class="rounded border border-sky-200 bg-sky-50 p-4">
+    <h2 class="text-sm font-semibold text-sky-900">Role Access Guide</h2>
+    <p class="mt-1 text-sm text-sky-800">Roles remain the source of truth for tenant authority. Vehicle scope narrows operational access further when assignments are applied.</p>
+    <div class="mt-4 grid gap-3 md:grid-cols-3">
+      {% for role in role_access_guide %}
+        <div class="rounded border border-sky-100 bg-white p-3">
+          <h3 class="text-sm font-semibold text-gray-900">{{ role.label }}</h3>
+          <p class="mt-1 text-xs text-gray-600">{{ role.summary }}</p>
+          <ul class="mt-3 space-y-1 text-xs text-gray-700">
+            {% for capability in role.capabilities %}
+              <li>{{ capability }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="rounded border border-gray-200 bg-white p-4">
+    <h2 class="text-sm font-semibold text-gray-900">Capability Matrix</h2>
+    <div class="mt-3 overflow-x-auto">
+      <table class="min-w-full text-xs">
+        <thead class="text-left text-gray-500">
+          <tr>
+            <th class="px-2 py-2">Capability</th>
+            <th class="px-2 py-2">Admin</th>
+            <th class="px-2 py-2">Manager</th>
+            <th class="px-2 py-2">Agent</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100 text-gray-700">
+          <tr><td class="px-2 py-2">Manage staff</td><td class="px-2 py-2">Yes</td><td class="px-2 py-2">Vehicle scope only</td><td class="px-2 py-2">No</td></tr>
+          <tr><td class="px-2 py-2">Verify payments</td><td class="px-2 py-2">Yes</td><td class="px-2 py-2">Yes</td><td class="px-2 py-2">No</td></tr>
+          <tr><td class="px-2 py-2">View reports</td><td class="px-2 py-2">Yes</td><td class="px-2 py-2">Yes</td><td class="px-2 py-2">No</td></tr>
+          <tr><td class="px-2 py-2">Edit organization settings</td><td class="px-2 py-2">Yes</td><td class="px-2 py-2">No</td><td class="px-2 py-2">No</td></tr>
+          <tr><td class="px-2 py-2">Daily operational work</td><td class="px-2 py-2">Yes</td><td class="px-2 py-2">Yes</td><td class="px-2 py-2">Yes</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
 
 <form method="get" class="grid grid-cols-12 gap-3 mb-4" aria-label="Filter staff">
   <div class="col-span-12 md:col-span-6">
@@ -35,7 +78,9 @@
       <tr>
         <th scope="col" class="px-3 py-2">User</th>
         <th scope="col" class="px-3 py-2">Role</th>
-        <th scope="col" class="px-3 py-2">Vehicle Types</th>
+        <th scope="col" class="px-3 py-2">Status</th>
+        <th scope="col" class="px-3 py-2">Effective Scope</th>
+        <th scope="col" class="px-3 py-2">Effective Access</th>
         <th scope="col" class="px-3 py-2">Metrics</th>
         <th scope="col" class="px-3 py-2 text-right">Actions</th>
       </tr>
@@ -45,15 +90,38 @@
         <tr class="hover:bg-gray-50">
           <td class="px-3 py-2">
             <div class="font-medium">{{ row.user.get_full_name|default:row.user.username }}</div>
-            <div class="text-xs text-gray-500">{{ row.user.email }}</div>
+            <div class="text-xs text-gray-500">{{ row.user.email|default:"No email" }}</div>
+            <div class="mt-1 text-xs text-gray-400">
+              {% if row.last_seen_at %}
+                Last active {{ row.last_seen_at|date:"Y-m-d H:i" }}
+              {% else %}
+                No login recorded yet
+              {% endif %}
+            </div>
           </td>
           <td class="px-3 py-2">{{ row.user.get_role_display|default:row.user.role }}</td>
           <td class="px-3 py-2">
-            <ul class="list-disc pl-4">
-              {% for label in row.vehicle_types %}
-                <li>{{ label }}</li>
+            <span class="inline-flex rounded-full px-2 py-1 text-xs font-medium {% if row.user.is_active %}bg-emerald-100 text-emerald-800{% else %}bg-gray-200 text-gray-700{% endif %}">
+              {{ row.status_label }}
+            </span>
+          </td>
+          <td class="px-3 py-2">
+            <div class="font-medium text-gray-900">
+              {% for label in row.vehicle_type_preview %}
+                <span class="inline-flex rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-700 mr-1 mb-1">{{ label }}</span>
               {% endfor %}
-            </ul>
+              {% if row.remaining_vehicle_type_count %}
+                <span class="inline-flex rounded-full bg-slate-50 px-2 py-1 text-xs text-slate-600">+{{ row.remaining_vehicle_type_count }} more</span>
+              {% endif %}
+            </div>
+            <p class="mt-2 text-xs text-gray-500">{{ row.scope_reason }}</p>
+          </td>
+          <td class="px-3 py-2">
+            <div class="flex flex-wrap gap-1">
+              {% for capability in row.effective_capabilities %}
+                <span class="inline-flex rounded-full bg-sky-50 px-2 py-1 text-xs text-sky-800">{{ capability }}</span>
+              {% endfor %}
+            </div>
           </td>
           <td class="px-3 py-2">
             <div class="text-xs text-gray-600 space-y-1">
@@ -66,7 +134,7 @@
           </td>
           <td class="px-3 py-2 text-right">
             <a class="inline-flex items-center rounded border border-sky-600 text-sky-700 hover:bg-sky-50 px-2 py-1" href="{% url 'dashboard:staff_vehicle_types' row.user.pk %}">
-              Edit Access
+              Manage Vehicle Scope
             </a>
             {% if request.user.role == 'admin' %}
             <form method="post" action="{% url 'accounts:staff_force_reset_password' row.user.pk %}" class="inline-block ml-2">
@@ -80,9 +148,10 @@
         </tr>
       {% empty %}
         <tr>
-          <td colspan="5" class="px-3 py-6 text-center text-gray-500">
+          <td colspan="7" class="px-3 py-6 text-center text-gray-500">
             <div class="space-y-2">
               <p>No staff users found for this organization.</p>
+              <p class="text-sm text-gray-400">Staff users are tenant-scoped accounts. Roles define authority, and vehicle scope can narrow daily operational access.</p>
               {% if request.user.role == 'admin' %}
                 <a href="{% url 'dashboard:staff_create' %}" class="inline-flex items-center rounded bg-sky-600 px-3 py-2 text-sm text-white hover:bg-sky-700">Add first staff member</a>
               {% endif %}

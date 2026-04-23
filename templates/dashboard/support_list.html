@@ -1,32 +1,88 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="flex items-center justify-between mb-4">
-  <h1 class="text-xl font-semibold">Support Requests</h1>
+  <div>
+    <h1 class="text-xl font-semibold">Support Requests</h1>
+    <p class="text-sm text-gray-600">
+      {% if can_view_tenant_support_requests %}
+        Track support progress, see what platform support needs from your tenant, and review request history.
+      {% else %}
+        Track the support requests you submitted and review platform responses without exposing them to other staff accounts.
+      {% endif %}
+    </p>
+  </div>
   <a href="{% url 'dashboard:support_create' %}" class="inline-flex items-center rounded bg-sky-600 px-3 py-2 text-white hover:bg-sky-700">New Request</a>
+</div>
+
+<div class="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+  <div class="rounded border border-gray-200 bg-white p-4">
+    <div class="text-xs font-medium uppercase tracking-wide text-gray-500">Open</div>
+    <div class="mt-2 text-2xl font-semibold text-gray-900">{{ summary.open }}</div>
+  </div>
+  <div class="rounded border border-blue-200 bg-blue-50 p-4">
+    <div class="text-xs font-medium uppercase tracking-wide text-blue-700">In Progress</div>
+    <div class="mt-2 text-2xl font-semibold text-blue-900">{{ summary.in_progress }}</div>
+  </div>
+  <div class="rounded border border-amber-200 bg-amber-50 p-4">
+    <div class="text-xs font-medium uppercase tracking-wide text-amber-700">Waiting On Tenant</div>
+    <div class="mt-2 text-2xl font-semibold text-amber-900">{{ summary.waiting_on_tenant }}</div>
+  </div>
+  <div class="rounded border border-emerald-200 bg-emerald-50 p-4">
+    <div class="text-xs font-medium uppercase tracking-wide text-emerald-700">Resolved</div>
+    <div class="mt-2 text-2xl font-semibold text-emerald-900">{{ summary.resolved }}</div>
+  </div>
+</div>
+
+<div class="mb-6 rounded border border-gray-200 bg-white p-4">
+  <h2 class="text-sm font-semibold text-gray-900">Status Guide</h2>
+  <p class="mt-1 text-xs text-gray-500">
+    {% if can_view_tenant_support_requests %}
+      These requests are handled in the platform support queue. Tenant admins and managers can review tenant-visible progress updates and resolutions for their organization.
+    {% else %}
+      These requests are handled in the platform support queue. Your account sees only the requests you submitted plus tenant-visible progress updates and resolutions.
+    {% endif %}
+  </p>
+  <div class="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+    {% for status, description in status_explanations.items %}
+      <div class="rounded border border-gray-100 bg-gray-50 p-3">
+        <div class="text-sm font-medium text-gray-900">{{ status|title|cut:"_"|default:status }}</div>
+        <div class="mt-1 text-xs text-gray-600">{{ description }}</div>
+      </div>
+    {% endfor %}
+  </div>
 </div>
 
 <form method="get" class="grid grid-cols-12 gap-3 mb-4" aria-label="Filter support requests">
   <div class="col-span-12 md:col-span-5">
-    <input type="text" name="q" value="{{ request.GET.q }}" placeholder="Search by subject" class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+    <input type="text" name="q" value="{{ filters.q }}" placeholder="Search subject, message, or reference" class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
   </div>
   <div class="col-span-12 md:col-span-3">
     <select name="status" class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
       <option value="">Any status</option>
-      <option value="open" {% if request.GET.status == 'open' %}selected{% endif %}>Open</option>
-      <option value="in_progress" {% if request.GET.status == 'in_progress' %}selected{% endif %}>In Progress</option>
-      <option value="closed" {% if request.GET.status == 'closed' %}selected{% endif %}>Closed</option>
+      <option value="open" {% if filters.status == 'open' %}selected{% endif %}>Open</option>
+      <option value="in_progress" {% if filters.status == 'in_progress' %}selected{% endif %}>In Progress</option>
+      <option value="waiting_on_tenant" {% if filters.status == 'waiting_on_tenant' %}selected{% endif %}>Waiting On Tenant</option>
+      <option value="resolved" {% if filters.status == 'resolved' %}selected{% endif %}>Resolved</option>
     </select>
   </div>
   <div class="col-span-12 md:col-span-3">
-    <select name="priority" class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
-      <option value="">Any priority</option>
-      <option value="high" {% if request.GET.priority == 'high' %}selected{% endif %}>High</option>
-      <option value="normal" {% if request.GET.priority == 'normal' %}selected{% endif %}>Normal</option>
-      <option value="low" {% if request.GET.priority == 'low' %}selected{% endif %}>Low</option>
+    <select name="request_type" class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+      <option value="">Any request type</option>
+      {% for value, label in request_type_choices %}
+        <option value="{{ value }}" {% if filters.request_type == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
     </select>
   </div>
   <div class="col-span-12 md:col-span-1">
     <button type="submit" class="w-full inline-flex items-center justify-center rounded border border-gray-300 px-3 py-2 text-sm hover:bg-gray-50">Filter</button>
+  </div>
+  <div class="col-span-12 md:col-span-3">
+    <select name="priority" class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+      <option value="">Any priority</option>
+      <option value="high" {% if filters.priority == 'high' %}selected{% endif %}>High</option>
+      <option value="normal" {% if filters.priority == 'normal' %}selected{% endif %}>Normal</option>
+      <option value="low" {% if filters.priority == 'low' %}selected{% endif %}>Low</option>
+    </select>
   </div>
 </form>
 
@@ -35,28 +91,40 @@
     <caption class="sr-only">List of support requests</caption>
     <thead class="bg-gray-50 text-left text-gray-600">
       <tr>
+        <th scope="col" class="px-3 py-2">Type</th>
         <th scope="col" class="px-3 py-2">Subject</th>
         <th scope="col" class="px-3 py-2">Status</th>
         <th scope="col" class="px-3 py-2">Priority</th>
-        <th scope="col" class="px-3 py-2">Created</th>
+        <th scope="col" class="px-3 py-2">Reference</th>
+        <th scope="col" class="px-3 py-2">Updated</th>
+        <th scope="col" class="px-3 py-2 text-right">Actions</th>
       </tr>
     </thead>
     <tbody class="divide-y divide-gray-100">
       {% for t in tickets %}
       <tr class="hover:bg-gray-50">
-        <td class="px-3 py-2 font-medium">{{ t.subject }}</td>
+        <td class="px-3 py-2 text-xs text-gray-600">{{ t.get_request_type_display }}</td>
+        <td class="px-3 py-2 font-medium">
+          <div>{{ t.subject }}</div>
+          <div class="mt-1 text-xs text-gray-500">{{ t.created_at|date:"Y-m-d H:i" }}</div>
+        </td>
         <td class="px-3 py-2">
           {% if t.status == 'open' %}<span class="inline-flex rounded bg-sky-100 text-sky-800 px-2 py-1 text-xs">Open</span>{% endif %}
           {% if t.status == 'in_progress' %}<span class="inline-flex rounded bg-yellow-100 text-yellow-800 px-2 py-1 text-xs">In Progress</span>{% endif %}
-          {% if t.status == 'closed' %}<span class="inline-flex rounded bg-gray-200 text-gray-800 px-2 py-1 text-xs">Closed</span>{% endif %}
+          {% if t.status == 'waiting_on_tenant' %}<span class="inline-flex rounded bg-amber-100 text-amber-800 px-2 py-1 text-xs">Waiting On Tenant</span>{% endif %}
+          {% if t.status == 'resolved' %}<span class="inline-flex rounded bg-emerald-100 text-emerald-800 px-2 py-1 text-xs">Resolved</span>{% endif %}
         </td>
         <td class="px-3 py-2">
           {% if t.priority == 'high' %}<span class="inline-flex rounded bg-red-100 text-red-800 px-2 py-1 text-xs">High</span>{% elif t.priority == 'low' %}<span class="inline-flex rounded bg-green-100 text-green-800 px-2 py-1 text-xs">Low</span>{% else %}<span class="inline-flex rounded bg-sky-100 text-sky-800 px-2 py-1 text-xs">Normal</span>{% endif %}
         </td>
-        <td class="px-3 py-2">{{ t.created_at|date:"Y-m-d H:i" }}</td>
+        <td class="px-3 py-2 text-xs text-gray-600">{{ t.primary_reference|default:"-" }}</td>
+        <td class="px-3 py-2">{{ t.updated_at|date:"Y-m-d H:i" }}</td>
+        <td class="px-3 py-2 text-right">
+          <a href="{% url 'dashboard:support_detail' t.pk %}" class="inline-flex items-center rounded border border-sky-600 text-sky-700 hover:bg-sky-50 px-2 py-1">View</a>
+        </td>
       </tr>
       {% empty %}
-      <tr><td colspan="4" class="px-3 py-6 text-center text-gray-500">No support requests.</td></tr>
+      <tr><td colspan="7" class="px-3 py-6 text-center text-gray-500">No support requests.</td></tr>
       {% endfor %}
     </tbody>
   </table>
@@ -64,16 +132,16 @@
 
 <div class="mt-4 flex items-center gap-2 text-sm">
   {% if page_obj.has_previous %}
-    <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?page=1&status={{ request.GET.status }}&priority={{ request.GET.priority }}&q={{ request.GET.q }}">First</a>
-    <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?page={{ page_obj.previous_page_number }}&status={{ request.GET.status }}&priority={{ request.GET.priority }}&q={{ request.GET.q }}">Prev</a>
+    <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?page=1&status={{ filters.status }}&priority={{ filters.priority }}&request_type={{ filters.request_type }}&q={{ filters.q }}">First</a>
+    <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?page={{ page_obj.previous_page_number }}&status={{ filters.status }}&priority={{ filters.priority }}&request_type={{ filters.request_type }}&q={{ filters.q }}">Prev</a>
   {% else %}
     <span class="rounded border px-2 py-1 opacity-50 cursor-not-allowed">First</span>
     <span class="rounded border px-2 py-1 opacity-50 cursor-not-allowed">Prev</span>
   {% endif %}
   <span class="px-2 py-1">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
   {% if page_obj.has_next %}
-    <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?page={{ page_obj.next_page_number }}&status={{ request.GET.status }}&priority={{ request.GET.priority }}&q={{ request.GET.q }}">Next</a>
-    <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?page={{ page_obj.paginator.num_pages }}&status={{ request.GET.status }}&priority={{ request.GET.priority }}&q={{ request.GET.q }}">Last</a>
+    <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?page={{ page_obj.next_page_number }}&status={{ filters.status }}&priority={{ filters.priority }}&request_type={{ filters.request_type }}&q={{ filters.q }}">Next</a>
+    <a class="rounded border px-2 py-1 hover:bg-gray-50" href="?page={{ page_obj.paginator.num_pages }}&status={{ filters.status }}&priority={{ filters.priority }}&request_type={{ filters.request_type }}&q={{ filters.q }}">Last</a>
   {% else %}
     <span class="rounded border px-2 py-1 opacity-50 cursor-not-allowed">Next</span>
     <span class="rounded border px-2 py-1 opacity-50 cursor-not-allowed">Last</span>

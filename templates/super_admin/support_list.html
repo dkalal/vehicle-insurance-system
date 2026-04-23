@@ -1,8 +1,41 @@
 {% extends "base.html" %}
 {% block content %}
-<h1 class="text-xl font-semibold mb-4">Support Requests</h1>
+<div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+  <div>
+    <h1 class="text-xl font-semibold">Support Requests</h1>
+    <p class="text-sm text-gray-600">Triage tenant requests with lightweight queues, aging cues, and typed operational context.</p>
+  </div>
+</div>
+
+<div class="mb-6 grid gap-3 md:grid-cols-3 xl:grid-cols-6">
+  <a href="?queue=all" class="rounded border px-4 py-3 {% if filters.queue == 'all' %}border-sky-300 bg-sky-50{% else %}border-gray-200 bg-white{% endif %}">
+    <div class="text-xs uppercase tracking-wide text-gray-500">All</div>
+    <div class="mt-2 text-2xl font-semibold text-gray-900">{{ queue_counts.all }}</div>
+  </a>
+  <a href="?queue=unassigned" class="rounded border px-4 py-3 {% if filters.queue == 'unassigned' %}border-sky-300 bg-sky-50{% else %}border-gray-200 bg-white{% endif %}">
+    <div class="text-xs uppercase tracking-wide text-gray-500">Unassigned</div>
+    <div class="mt-2 text-2xl font-semibold text-gray-900">{{ queue_counts.unassigned }}</div>
+  </a>
+  <a href="?queue=high_priority" class="rounded border px-4 py-3 {% if filters.queue == 'high_priority' %}border-red-300 bg-red-50{% else %}border-gray-200 bg-white{% endif %}">
+    <div class="text-xs uppercase tracking-wide text-gray-500">High Priority</div>
+    <div class="mt-2 text-2xl font-semibold text-red-700">{{ queue_counts.high_priority }}</div>
+  </a>
+  <a href="?queue=waiting_on_tenant" class="rounded border px-4 py-3 {% if filters.queue == 'waiting_on_tenant' %}border-amber-300 bg-amber-50{% else %}border-gray-200 bg-white{% endif %}">
+    <div class="text-xs uppercase tracking-wide text-gray-500">Waiting On Tenant</div>
+    <div class="mt-2 text-2xl font-semibold text-amber-700">{{ queue_counts.waiting_on_tenant }}</div>
+  </a>
+  <a href="?queue=aging" class="rounded border px-4 py-3 {% if filters.queue == 'aging' %}border-orange-300 bg-orange-50{% else %}border-gray-200 bg-white{% endif %}">
+    <div class="text-xs uppercase tracking-wide text-gray-500">Aging</div>
+    <div class="mt-2 text-2xl font-semibold text-orange-700">{{ queue_counts.aging }}</div>
+  </a>
+  <a href="?queue=resolved_recently" class="rounded border px-4 py-3 {% if filters.queue == 'resolved_recently' %}border-emerald-300 bg-emerald-50{% else %}border-gray-200 bg-white{% endif %}">
+    <div class="text-xs uppercase tracking-wide text-gray-500">Resolved Recently</div>
+    <div class="mt-2 text-2xl font-semibold text-emerald-700">{{ queue_counts.resolved_recently }}</div>
+  </a>
+</div>
 
 <form method="get" class="grid grid-cols-12 gap-3 mb-4" role="search" aria-label="Filter support requests">
+  <input type="hidden" name="queue" value="{{ filters.queue }}">
   <div class="col-span-12 md:col-span-4">
     <input name="q" class="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500" placeholder="Search subject/message" value="{{ filters.q }}">
   </div>
@@ -11,7 +44,8 @@
       <option value="">Any status</option>
       <option value="open" {% if filters.status == 'open' %}selected{% endif %}>Open</option>
       <option value="in_progress" {% if filters.status == 'in_progress' %}selected{% endif %}>In Progress</option>
-      <option value="closed" {% if filters.status == 'closed' %}selected{% endif %}>Closed</option>
+      <option value="waiting_on_tenant" {% if filters.status == 'waiting_on_tenant' %}selected{% endif %}>Waiting On Tenant</option>
+      <option value="resolved" {% if filters.status == 'resolved' %}selected{% endif %}>Resolved</option>
     </select>
   </div>
   <div class="col-span-6 md:col-span-2">
@@ -20,6 +54,14 @@
       <option value="low" {% if filters.priority == 'low' %}selected{% endif %}>Low</option>
       <option value="normal" {% if filters.priority == 'normal' %}selected{% endif %}>Normal</option>
       <option value="high" {% if filters.priority == 'high' %}selected{% endif %}>High</option>
+    </select>
+  </div>
+  <div class="col-span-12 md:col-span-2">
+    <select name="request_type" class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500">
+      <option value="">Any type</option>
+      {% for value, label in request_type_choices %}
+        <option value="{{ value }}" {% if filters.request_type == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
     </select>
   </div>
   <div class="col-span-12 md:col-span-3">
@@ -35,30 +77,42 @@
     <thead class="bg-gray-50 text-left text-gray-600">
       <tr>
         <th class="px-3 py-2">Tenant</th>
+        <th class="px-3 py-2">Type</th>
         <th class="px-3 py-2">Subject</th>
         <th class="px-3 py-2">Status</th>
         <th class="px-3 py-2">Priority</th>
+        <th class="px-3 py-2">Reference</th>
+        <th class="px-3 py-2">Aging</th>
         <th class="px-3 py-2">Assigned</th>
-        <th class="px-3 py-2">Created</th>
+        <th class="px-3 py-2">Updated</th>
         <th class="px-3 py-2 text-right">Actions</th>
       </tr>
     </thead>
     <tbody class="divide-y divide-gray-100">
-      {% for t in tickets %}
+      {% for row in ticket_rows %}
+      {% with t=row.ticket %}
       <tr class="hover:bg-gray-50">
         <td class="px-3 py-2">{{ t.tenant.name }}</td>
+        <td class="px-3 py-2 text-xs text-gray-600">{{ t.get_request_type_display }}</td>
         <td class="px-3 py-2 font-medium">{{ t.subject }}</td>
         <td class="px-3 py-2">{{ t.get_status_display }}</td>
-        <td class="px-3 py-2">{{ t.priority|title }}</td>
+        <td class="px-3 py-2">{{ t.get_priority_display }}</td>
+        <td class="px-3 py-2 text-xs text-gray-600">{{ row.primary_reference|default:"-" }}</td>
+        <td class="px-3 py-2">
+          <span class="inline-flex rounded-full px-2 py-1 text-xs font-medium {% if row.aging_state == 'overdue' %}bg-red-100 text-red-800{% elif row.aging_state == 'warning' %}bg-amber-100 text-amber-800{% elif row.aging_state == 'resolved' %}bg-emerald-100 text-emerald-800{% else %}bg-slate-100 text-slate-700{% endif %}">
+            {{ row.sla_label }}
+          </span>
+        </td>
         <td class="px-3 py-2">{% if t.assigned_to %}{{ t.assigned_to.email }}{% else %}-{% endif %}</td>
-        <td class="px-3 py-2">{{ t.created_at|date:"Y-m-d H:i" }}</td>
+        <td class="px-3 py-2">{{ t.updated_at|date:"Y-m-d H:i" }}</td>
         <td class="px-3 py-2 text-right">
-          <a href="{% url 'super_admin:support_update' t.pk %}" class="inline-flex items-center rounded border border-sky-600 text-sky-700 hover:bg-sky-50 px-2 py-1">Update</a>
+          <a href="{% url 'super_admin:support_update' t.pk %}" class="inline-flex items-center rounded border border-sky-600 text-sky-700 hover:bg-sky-50 px-2 py-1">Open</a>
         </td>
       </tr>
+      {% endwith %}
       {% empty %}
       <tr>
-        <td class="px-3 py-6 text-center text-gray-500" colspan="7">No requests.</td>
+        <td class="px-3 py-6 text-center text-gray-500" colspan="10">No requests.</td>
       </tr>
       {% endfor %}
     </tbody>

@@ -3,6 +3,7 @@ from django.contrib.auth import get_user_model
 from django.utils.text import slugify
 
 from apps.tenants.models import Tenant
+from apps.core.models import SupportRequest
 from .models import PlatformConfig
 
 
@@ -156,3 +157,58 @@ class PlatformConfigForm(forms.ModelForm):
         widgets = {
             'announcement_message': forms.Textarea(attrs={'rows': 4}),
         }
+
+
+class SupportRequestUpdateForm(forms.Form):
+    status = forms.ChoiceField(choices=SupportRequest.STATUS_CHOICES)
+    priority = forms.ChoiceField(choices=SupportRequest.PRIORITY_CHOICES)
+    assigned_to = forms.ModelChoiceField(
+        queryset=get_user_model().objects.none(),
+        required=False,
+        empty_label="Unassigned",
+    )
+    tenant_message = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={'rows': 4}),
+        help_text="Visible to the tenant on the support timeline.",
+    )
+    internal_note = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={'rows': 4}),
+        help_text="Visible only to platform support staff.",
+    )
+    resolution_summary = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={'rows': 3}),
+        help_text="Required when resolving a support request.",
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        User = get_user_model()
+        self.fields['assigned_to'].queryset = User.objects.filter(is_super_admin=True).order_by('username')
+        base = (
+            'block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm '
+            'focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500'
+        )
+        select_base = (
+            'block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm '
+            'focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500'
+        )
+        for name, field in self.fields.items():
+            existing = field.widget.attrs.get('class', '')
+            if name in ('status', 'priority', 'assigned_to'):
+                field.widget.attrs['class'] = (existing + ' ' if existing else '') + select_base
+            else:
+                field.widget.attrs['class'] = (existing + ' ' if existing else '') + base
+
+    def clean(self):
+        cleaned = super().clean()
+        status = cleaned.get('status')
+        resolution_summary = (cleaned.get('resolution_summary') or '').strip()
+        if status == SupportRequest.STATUS_RESOLVED and not resolution_summary:
+            self.add_error('resolution_summary', 'Resolution summary is required when resolving a request.')
+        cleaned['tenant_message'] = (cleaned.get('tenant_message') or '').strip()
+        cleaned['internal_note'] = (cleaned.get('internal_note') or '').strip()
+        cleaned['resolution_summary'] = resolution_summary
+        return cleaned

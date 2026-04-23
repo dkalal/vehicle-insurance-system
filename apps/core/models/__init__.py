@@ -16,7 +16,7 @@ from .customer import Customer
 from .vehicle import Vehicle
 from .policy import Policy
 from .payment import Payment
-from .support_request import SupportRequest
+from .support_request import SupportRequest, SupportRequestEvent
 from .vehicle_record import VehicleRecord, LATRARecord, PermitType, VehiclePermit
 from .onboarding import TenantOnboardingState
 
@@ -30,6 +30,7 @@ __all__ = [
     'Policy',
     'Payment',
     'SupportRequest',
+    'SupportRequestEvent',
     'VehicleRecord',
     'LATRARecord',
     'PermitType',

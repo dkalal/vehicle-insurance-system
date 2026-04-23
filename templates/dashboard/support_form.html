@@ -1,9 +1,22 @@
 {% extends "base.html" %}
 {% block content %}
 <h1 class="text-xl font-semibold mb-4">New Support Request</h1>
+<div class="mb-4 rounded border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
+  Choose the closest request type first so platform support can triage your issue quickly. Add a vehicle, policy, or permit reference when you have one.
+</div>
+<div class="mb-4 rounded border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700">
+  Requests from tenant admins, managers, and agents go to the platform support queue managed by super admins. Your tenant team can still track the request and see tenant-visible updates on the timeline.
+</div>
 <form method="post" novalidate class="bg-white rounded shadow p-4">
   {% csrf_token %}
   <div class="grid grid-cols-12 gap-4">
+    <div class="col-span-12 md:col-span-6">
+      <label class="block text-sm font-medium text-gray-700" for="id_request_type">Request type</label>
+      {{ form.request_type }}
+      <p class="mt-1 text-xs text-gray-500" id="request-type-help">
+        {{ request_type_help.general }}
+      </p>
+    </div>
     <div class="col-span-12 md:col-span-8">
       <label class="block text-sm font-medium text-gray-700" for="id_subject">Subject</label>
       {{ form.subject }}
@@ -11,6 +24,30 @@
     <div class="col-span-12 md:col-span-4">
       <label class="block text-sm font-medium text-gray-700" for="id_priority">Priority</label>
       {{ form.priority }}
+      {% if form.priority.help_text %}
+      <p class="mt-1 text-xs text-gray-500">{{ form.priority.help_text }}</p>
+      {% endif %}
+    </div>
+    <div class="col-span-12 md:col-span-4">
+      <label class="block text-sm font-medium text-gray-700" for="id_vehicle_registration_number">Vehicle registration</label>
+      {{ form.vehicle_registration_number }}
+      {% if form.vehicle_registration_number.help_text %}
+      <p class="mt-1 text-xs text-gray-500">{{ form.vehicle_registration_number.help_text }}</p>
+      {% endif %}
+    </div>
+    <div class="col-span-12 md:col-span-4">
+      <label class="block text-sm font-medium text-gray-700" for="id_policy_reference">Policy reference</label>
+      {{ form.policy_reference }}
+      {% if form.policy_reference.help_text %}
+      <p class="mt-1 text-xs text-gray-500">{{ form.policy_reference.help_text }}</p>
+      {% endif %}
+    </div>
+    <div class="col-span-12 md:col-span-4">
+      <label class="block text-sm font-medium text-gray-700" for="id_permit_reference">Permit/LATRA reference</label>
+      {{ form.permit_reference }}
+      {% if form.permit_reference.help_text %}
+      <p class="mt-1 text-xs text-gray-500">{{ form.permit_reference.help_text }}</p>
+      {% endif %}
     </div>
     <div class="col-span-12">
       <label class="block text-sm font-medium text-gray-700" for="id_message">Message</label>
@@ -22,4 +59,21 @@
     <a href="{% url 'dashboard:support_list' %}" class="inline-flex items-center rounded border px-3 py-2 text-sm hover:bg-gray-50">Cancel</a>
   </div>
 </form>
+{{ request_type_help|json_script:"support-request-type-help" }}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const select = document.getElementById('id_request_type');
+    const help = document.getElementById('request-type-help');
+    const payload = document.getElementById('support-request-type-help');
+    if (!select || !help || !payload) {
+      return;
+    }
+    const mapping = JSON.parse(payload.textContent);
+    const syncHelp = function() {
+      help.textContent = mapping[select.value] || mapping.general || '';
+    };
+    select.addEventListener('change', syncHelp);
+    syncHelp();
+  });
+</script>
 {% endblock %}
